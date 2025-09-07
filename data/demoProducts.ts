@@ -170,38 +170,55 @@ export const demoProducts: Record<string, Product[]> = {
   // Coffee House products
   'demo_cafe_002': [
     {
-      id: 'coffee_house_espresso_001',
-      name: 'Espresso',
-      description: 'Bold Italian espresso. Strong and invigorating.',
-      price: 6000,
+      id: 'coffee-house-new-001',
+      name: 'Iced Caramel Macchiato',
+      description: 'Rich espresso with vanilla-flavored syrup, steamed milk, and caramel drizzle over ice',
+      price: 8500, // 85 TL in kuruş
       currency: 'TRY',
-      category: 'hot-drinks',
-      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&h=400&fit=crop',
+      category: 'new',
+      imageUrl: 'https://example.com/iced-caramel-macchiato.jpg',
+      badge: {
+        text: 'NEW',
+        position: 'topRight',
+        color: '#fff',
+        backgroundColor: '#10B981'
+      },
       isActive: true,
-      isPopular: true,
-      isNew: false,
-      createdAt: '2024-01-10T10:00:00Z',
-      updatedAt: '2024-01-10T10:00:00Z'
+      isPopular: false,
+      isNew: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      nutritionalInfo: {
+        energy: 180,
+        proteins: 6,
+        fats: 4,
+        carbs: 28
+      },
+      customizationOptions: {
+        sizes: [
+          { id: 'small', label: 'Small', volume: '12oz', priceModifier: 0 },
+          { id: 'medium', label: 'Medium', volume: '16oz', priceModifier: 500 },
+          { id: 'large', label: 'Large', volume: '20oz', priceModifier: 1000 }
+        ],
+        milkTypes: [
+          { id: 'whole', name: 'Whole Milk', icon: '🥛', priceModifier: 0 },
+          { id: 'oat', name: 'Oat Milk', icon: '🌾', priceModifier: 300 },
+          { id: 'almond', name: 'Almond Milk', icon: '🥜', priceModifier: 300 }
+        ],
+        temperatures: [
+          { id: 'hot', name: 'Hot', icon: '🔥' },
+          { id: 'iced', name: 'Iced', icon: '🧊' }
+        ],
+        addOns: [
+          { id: 'extra-shot', name: 'Extra Shot', icon: '☕', price: 500 },
+          { id: 'whipped-cream', name: 'Whipped Cream', icon: '🍦', price: 200 }
+        ]
+      }
     }
   ],
   
-  // Brew & Bean products
-  'demo_cafe_003': [
-    {
-      id: 'brew_bean_filter_001',
-      name: 'Filter Coffee',
-      description: 'Freshly brewed filter coffee from our special blend of beans.',
-      price: 9000,
-      currency: 'TRY',
-      category: 'hot-drinks',
-      imageUrl: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400&h=400&fit=crop',
-      isActive: true,
-      isPopular: true,
-      isNew: false,
-      createdAt: '2024-01-10T10:00:00Z',
-      updatedAt: '2024-01-10T10:00:00Z'
-    }
-  ]
+  // Brew & Bean products - пустой массив
+  'demo_cafe_003': []
 };
 
 // Helper function to get products by cafe ID
@@ -212,7 +229,9 @@ export const getDemoProductsByCafeId = (cafeId: string): Product[] => {
 // Helper function to get products by category
 export const getDemoProductsByCategory = (cafeId: string, category: string): Product[] => {
   const cafeProducts = demoProducts[cafeId] || [];
-  return cafeProducts.filter(product => product.category === category);
+  const filteredProducts = cafeProducts.filter(product => product.category === category);
+  console.log(`🔍 getDemoProductsByCategory: cafeId=${cafeId}, category=${category}, found=${filteredProducts.length} products`);
+  return filteredProducts;
 };
 
 // Helper function to get popular products
