@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera'; // <-- YENİ
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,99 +22,75 @@ interface QRScannerViewProps {
   onClose?: () => void;
 }
 
-export const QRScannerView: React.FC<QRScannerViewProps> = ({ 
-  onCafeScanned, 
-  onClose 
+export const QRScannerView: React.FC<QRScannerViewProps> = ({
+  onCafeScanned,
+  onClose,
 }) => {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions(); // <-- YENİ
   const [scanned, setScanned] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [cafeCode, setCafeCode] = useState('');
 
-  // Don't request permissions automatically - only when user wants to scan
+  const hasPermission =
+    permission?.granted === true ? true : permission ? false : null;
+
   const requestCameraPermission = async () => {
     setIsRequestingPermission(true);
-    const { status } = await BarCodeScanner.requestPermissionsAsync();
-    setHasPermission(status === 'granted');
+    const res = await requestPermission();
     setIsRequestingPermission(false);
   };
 
-  const getCameraPermissions = async () => {
-    const { status } = await BarCodeScanner.requestPermissionsAsync();
-    setHasPermission(status === 'granted');
-  };
-
-  const handleBarCodeScanned = ({ type, data }: any) => {
+  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (scanned) return;
-    
     setScanned(true);
-    
     try {
       const cafeData = JSON.parse(data);
-      
-      // Validate cafe data structure
-      if (!cafeData.cafeId || !cafeData.cafeName) {
-        throw new Error('Invalid cafe data');
-      }
-      
+      if (!cafeData.cafeId || !cafeData.cafeName) throw new Error('Invalid cafe data');
       onCafeScanned(cafeData);
-    } catch (error) {
+    } catch {
       Alert.alert(
         'Scanning Error',
         'QR code does not contain cafe information. Make sure you are scanning the correct code.',
-        [
-          {
-            text: 'Try Again',
-            onPress: () => setScanned(false),
-          },
-        ]
+        [{ text: 'Try Again', onPress: () => setScanned(false) }]
       );
     }
   };
 
-  const toggleFlash = () => {
-    setFlashOn(!flashOn);
-  };
+  const toggleFlash = () => setFlashOn((v) => !v);
 
   const handleCafeCodeSubmit = () => {
     if (!cafeCode.trim()) {
       Alert.alert('Error', 'Please enter cafe code');
       return;
     }
-
-    // Map cafe codes to demo data
     const cafeDataMap: Record<string, any> = {
-      'akafe': {
+      akafe: {
         cafeId: 'demo_cafe_001',
         cafeName: 'AKAFE',
         location: 'Moscow, Arbat St. 1',
-        apiEndpoint: 'http://localhost:3000/api'
+        apiEndpoint: 'http://localhost:3000/api',
       },
-      'coffee': {
+      coffee: {
         cafeId: 'demo_cafe_002',
         cafeName: 'Coffee House',
         location: 'St. Petersburg, Nevsky Prospect 50',
-        apiEndpoint: 'http://localhost:3001/api'
+        apiEndpoint: 'http://localhost:3001/api',
       },
-      'brew': {
+      brew: {
         cafeId: 'demo_cafe_003',
         cafeName: 'Brew & Bean',
         location: 'Kazan, Bauman St. 15',
-        apiEndpoint: 'http://localhost:3002/api'
-      }
+        apiEndpoint: 'http://localhost:3002/api',
+      },
     };
-
     const cafeData = cafeDataMap[cafeCode.toLowerCase()];
-    if (cafeData) {
-      onCafeScanned(cafeData);
-    } else {
+    if (cafeData) onCafeScanned(cafeData);
+    else {
       Alert.alert(
         'Cafe Not Found',
         'Available codes:\n• akafe - AKAFE (6 categories)\n• coffee - Coffee House (4 categories)\n• brew - Brew & Bean (4 categories)',
-        [
-          { text: 'OK' }
-        ]
+        [{ text: 'OK' }]
       );
     }
   };
@@ -122,25 +99,23 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#000" />
-        
-        {/* Header */}
+
         <View style={styles.header}>
-                  <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>QR Code Scanning</Text>
           <View style={styles.placeholderButton} />
         </View>
 
-        {/* Permission Request */}
         <View style={styles.permissionContainer}>
           <Ionicons name="qr-code" size={isTablet ? 80 : 60} color="#000" />
           <Text style={styles.permissionTitle}>Ready to Scan</Text>
           <Text style={styles.permissionText}>
             Press the button below to start QR code scanning
           </Text>
-          <TouchableOpacity 
-            style={styles.permissionButton} 
+          <TouchableOpacity
+            style={styles.permissionButton}
             onPress={requestCameraPermission}
             disabled={isRequestingPermission}
           >
@@ -150,19 +125,16 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               <Text style={styles.permissionButtonText}>Start Scanning</Text>
             )}
           </TouchableOpacity>
-          
-          {/* Manual Cafe Code Input for Simulator */}
+
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>or</Text>
             <View style={styles.dividerLine} />
           </View>
-          
+
           <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
-          <Text style={styles.cafeCodeDescription}>
-            Available codes: akafe, coffee, brew
-          </Text>
-          
+          <Text style={styles.cafeCodeDescription}>Available codes: akafe, coffee, brew</Text>
+
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.cafeCodeInput}
@@ -173,10 +145,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <TouchableOpacity 
-              style={styles.submitButton}
-              onPress={handleCafeCodeSubmit}
-            >
+            <TouchableOpacity style={styles.submitButton} onPress={handleCafeCodeSubmit}>
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -189,17 +158,15 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#000" />
-        
-                {/* Header */}
+
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
           </TouchableOpacity>
-        <Text style={styles.headerTitle}>QR Code Scanning</Text>
-        <View style={styles.placeholderButton} />
+          <Text style={styles.headerTitle}>QR Code Scanning</Text>
+          <View style={styles.placeholderButton} />
         </View>
 
-        {/* Permission Denied */}
         <View style={styles.permissionContainer}>
           <Ionicons name="camera-outline" size={isTablet ? 80 : 60} color="#000" />
           <Text style={styles.permissionTitle}>No Camera Access</Text>
@@ -209,19 +176,16 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
           <TouchableOpacity style={styles.permissionButton} onPress={requestCameraPermission}>
             <Text style={styles.permissionButtonText}>Allow Access</Text>
           </TouchableOpacity>
-          
-          {/* Manual Cafe Code Input */}
+
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>or</Text>
             <View style={styles.dividerLine} />
           </View>
-          
+
           <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
-          <Text style={styles.cafeCodeDescription}>
-            Available codes: akafe, coffee, brew
-          </Text>
-          
+          <Text style={styles.cafeCodeDescription}>Available codes: akafe, coffee, brew</Text>
+
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.cafeCodeInput}
@@ -232,10 +196,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <TouchableOpacity 
-              style={styles.submitButton}
-              onPress={handleCafeCodeSubmit}
-            >
+            <TouchableOpacity style={styles.submitButton} onPress={handleCafeCodeSubmit}>
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -247,88 +208,66 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-              {/* Header */}
-        <View style={styles.header}>
-                  <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
-          </TouchableOpacity>
+
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>QR Code Scanning</Text>
         <TouchableOpacity style={styles.flashButton} onPress={toggleFlash}>
-          <Ionicons 
-            name={flashOn ? "flash" : "flash-off"} 
-            size={isTablet ? 28 : 24} 
-            color="#000" 
-          />
+          <Ionicons name={flashOn ? 'flash' : 'flash-off'} size={isTablet ? 28 : 24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* Camera View */}
       <View style={styles.cameraContainer}>
-        <BarCodeScanner
-          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+        <CameraView
           style={styles.camera}
+          enableTorch={flashOn}                             // <-- YENİ
+          barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'code128'] }}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         />
-        
-        {/* Overlay */}
+        {/* Overlay eski haliyle */}
         <View style={styles.overlay}>
-          {/* Top overlay */}
           <View style={styles.overlayTop} />
-          
-          {/* Middle section with scanning frame */}
           <View style={styles.overlayMiddle}>
             <View style={styles.overlaySide} />
             <View style={styles.scanFrame}>
-              {/* Corner indicators */}
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />
               <View style={[styles.corner, styles.bottomLeft]} />
               <View style={[styles.corner, styles.bottomRight]} />
-              
-              {/* QR Code Icon in center */}
               <View style={styles.qrIconContainer}>
                 <Ionicons name="qr-code" size={isTablet ? 80 : 60} color="#fff" />
               </View>
             </View>
             <View style={styles.overlaySide} />
           </View>
-          
-          {/* Bottom overlay */}
           <View style={styles.overlayBottom} />
         </View>
       </View>
 
-      {/* Instructions */}
       <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsTitle}>
-          Point camera at cafe QR code
-        </Text>
+        <Text style={styles.instructionsTitle}>Point camera at cafe QR code</Text>
         <Text style={styles.instructionsText}>
           QR code must contain cafe information to access the menu
         </Text>
-        
+
         {scanned && (
-          <TouchableOpacity 
-            style={styles.rescanButton} 
-            onPress={() => setScanned(false)}
-          >
+          <TouchableOpacity style={styles.rescanButton} onPress={() => setScanned(false)}>
             <Ionicons name="refresh" size={20} color="#333" />
             <Text style={styles.rescanButtonText}>Scan Again</Text>
           </TouchableOpacity>
         )}
-        
-        {/* Manual Cafe Code Input */}
+
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
           <View style={styles.dividerLine} />
         </View>
-        
+
         <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
-                        <Text style={styles.cafeCodeDescription}>
-                  Available codes: akafe (6), coffee (4), brew (4)
-                </Text>
-        
+        <Text style={styles.cafeCodeDescription}>Available codes: akafe (6), coffee (4), brew (4)</Text>
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.cafeCodeInput}
@@ -339,10 +278,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <TouchableOpacity 
-            style={styles.submitButton}
-            onPress={handleCafeCodeSubmit}
-          >
+          <TouchableOpacity style={styles.submitButton} onPress={handleCafeCodeSubmit}>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -350,6 +286,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
