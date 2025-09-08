@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useProducts } from '../hooks/useProducts';
@@ -19,8 +19,10 @@ import { Cafe } from '../services/CafeService';
 import { Product, ProductCategory } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
 import CafeVideoView from './CafeVideoView';
+import CheckoutModal from './CheckoutModal';
 import DrinkCard from './DrinkCard';
 import ProductDetailView from './ProductDetailView';
+import ProfileModal from './ProfileModal';
 import { PromoCodesSection } from './PromoCodesSection';
 
 const { width, height } = Dimensions.get('window');
@@ -46,6 +48,8 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   const [pulseAnimation] = useState(new Animated.Value(1));
   const [showCart, setShowCart] = useState(false);
   const [isCartModalVisible, setIsCartModalVisible] = useState(false);
+  const [isCheckoutModalVisible, setIsCheckoutModalVisible] = useState(false);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
   // Category mapping for display and API
   const categoryMapping: Record<ProductCategory, { display: string; api: string }> = {
@@ -93,8 +97,11 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   };
 
   const handleProductPress = (product: Product) => {
-    setSelectedProduct(product);
-    setIsProductDetailVisible(true);
+    // Показываем модальное окно только для демо-кафе
+    if (cafe?.id?.startsWith('demo_cafe_')) {
+      setSelectedProduct(product);
+      setIsProductDetailVisible(true);
+    }
   };
 
   const handleCloseProductDetail = () => {
@@ -103,13 +110,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   };
 
   const handleProfilePress = () => {
-    if (onProfilePress) {
-      onProfilePress();
-    } else {
-      // Navigate to profile screen
-      // For now, we'll use the onProfilePress prop
-      console.log('Profile pressed - need navigation implementation');
-    }
+    setIsProfileModalVisible(true);
   };
 
   // Cart functions
@@ -181,7 +182,18 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
     setCartItems([]);
   };
 
+
+  const handleOrderSuccess = () => {
+    setCartItems([]);
+    setCartTotal(0);
+    setIsCheckoutModalVisible(false);
+  };
+
   const openCartModal = () => {
+    if (cartItems.length === 0) {
+      return; // Don't open if cart is empty
+    }
+    
     // Press animation
     Animated.sequence([
       Animated.timing(cartAnimation, {
@@ -201,8 +213,9 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         friction: 8,
       }),
     ]).start();
-    
-    setIsCartModalVisible(true);
+
+    // Always open checkout modal - authentication check will happen inside
+    setIsCheckoutModalVisible(true);
   };
 
   // Calculate cart total
@@ -439,8 +452,26 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
           visible={isProductDetailVisible}
           product={selectedProduct}
           onClose={handleCloseProductDetail}
+          onAddToCart={(product, quantity, customizations) => {
+            addToCart(product);
+          }}
         />
       )}
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        visible={isCheckoutModalVisible}
+        onClose={() => setIsCheckoutModalVisible(false)}
+        cartItems={cartItems}
+        onOrderSuccess={handleOrderSuccess}
+      />
+
+
+      {/* Profile Modal */}
+      <ProfileModal
+        visible={isProfileModalVisible}
+        onClose={() => setIsProfileModalVisible(false)}
+      />
 
       {/* Floating Cart Widget - Always Visible */}
       <Animated.View 
@@ -463,7 +494,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
       >
         <TouchableOpacity style={styles.floatingCartButton} onPress={openCartModal}>
           <LinearGradient
-            colors={['#9E9E9E', '#757575', '#616161']}
+            colors={cartItems.length > 0 ? ['#6B7280', '#4B5563'] : ['#9E9E9E', '#757575', '#616161']}
             style={styles.floatingCartGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -810,6 +841,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: isTablet ? 30 : 25,
+    position: 'relative',
   },
   cartPreview: {
     position: 'absolute',

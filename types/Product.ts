@@ -56,6 +56,7 @@ export interface MilkType {
   id: string;
   name: string;
   icon: string;
+  imageUrl?: string;
   priceModifier: number;
 }
 
@@ -63,12 +64,14 @@ export interface Temperature {
   id: string;
   name: string;
   icon: string;
+  imageUrl?: string;
 }
 
 export interface AddOn {
   id: string;
   name: string;
   icon: string;
+  imageUrl?: string;
   price: number;
 }
 
