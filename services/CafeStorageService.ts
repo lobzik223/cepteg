@@ -126,8 +126,9 @@ export class CafeStorageService {
    */
   createCafeFromTenant(tenant: TenantData): Cafe {
     // Try to get full cafe data from demo cafes first
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const demoCafes = require('../data/demoCafes').demoCafes;
-    const demoCafe = demoCafes.find(cafe => cafe.id === tenant.id);
+    const demoCafe = demoCafes.find((cafe: { id: string; }) => cafe.id === tenant.id);
     
     if (demoCafe) {
       // Return full demo cafe data with categories

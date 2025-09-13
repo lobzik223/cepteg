@@ -1,7 +1,8 @@
 import { Cafe } from './CafeService';
 import { cafeVideoService } from './CafeVideoService';
 import { productService } from './ProductService';
-import { promoCodeService } from './PromoCodeService';
+import PromoCodeService from './PromoCodeService';
+const promoCodeService = PromoCodeService.getInstance();
 
 export interface PreloadProgress {
   stage: string;
@@ -75,8 +76,10 @@ export class DataPreloadService {
         message: 'Loading products...',
       });
 
-      const products = await productService.getProducts(cafe.id);
-      result.data!.products = products;
+      const productsResponse = await productService.getProducts(cafe.id);
+      result.data!.products = Array.isArray(productsResponse)
+        ? productsResponse
+        : productsResponse.products ?? [];
 
       // Stage 4: Promo Codes (80%)
       onProgress?.({
@@ -85,8 +88,12 @@ export class DataPreloadService {
         message: 'Loading promo codes...',
       });
 
-      const promoCodes = await promoCodeService.getPromoCodes(cafe.id);
-      result.data!.promoCodes = promoCodes;
+      // If you expect multiple promo codes, you may need to fetch their IDs from somewhere
+      // Here, we assume a single promo code per cafe for demonstration
+      // Replace 'demoPromoId' with the actual promoId you want to fetch
+      const demoPromoId = 'demoPromoId'; // TODO: Replace with actual promoId
+      const promoCode = await promoCodeService.getPromoCodeById(cafe.id, demoPromoId);
+      result.data!.promoCodes = promoCode ? [promoCode] : [];
 
       // Stage 5: Complete (100%)
       onProgress?.({
@@ -154,8 +161,10 @@ export class DataPreloadService {
           message: 'Loading products...',
         });
 
-        const products = await productService.getProducts(cafeId);
-        result.data!.products = products;
+        const productsResponse = await productService.getProducts(cafeId);
+        result.data!.products = Array.isArray(productsResponse)
+          ? productsResponse
+          : productsResponse.products ?? [];
 
         // Stage 4: Promo Codes (80%)
         onProgress?.({
@@ -164,8 +173,10 @@ export class DataPreloadService {
           message: 'Loading promo codes...',
         });
 
-        const promoCodes = await promoCodeService.getPromoCodes(cafeId);
-        result.data!.promoCodes = promoCodes;
+        // Replace with actual promo code ID as needed
+        const demoPromoId = 'demoPromoId'; // TODO: Replace with actual promoId
+        const promoCode = await promoCodeService.getPromoCodeById(cafeId, demoPromoId);
+        result.data!.promoCodes = promoCode ? [promoCode] : [];
       }
 
       // Stage 5: Complete (100%)

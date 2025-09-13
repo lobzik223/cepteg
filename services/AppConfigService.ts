@@ -1,11 +1,11 @@
 import {
-    AppConfig,
-    AppConfigResponse,
-    CreatePromotionalCardRequest,
-    PromotionalCard,
-    PromotionalCardsResponse,
-    UpdateAppConfigRequest,
-    UpdatePromotionalCardRequest
+  AppConfig,
+  AppConfigResponse,
+  CreatePromotionalCardRequest,
+  PromotionalCard,
+  PromotionalCardsResponse,
+  UpdateAppConfigRequest,
+  UpdatePromotionalCardRequest
 } from '../types/AppConfig';
 
 // Base API configuration
@@ -46,28 +46,32 @@ const defaultAppConfig: AppConfig = {
 const defaultPromotionalCards: PromotionalCard[] = [
   {
     id: 'promo-1',
-            title: 'Drink for 120 Turkish Lira',
-        description: 'Try our new drink',
+    title: 'Drink for 120 Turkish Lira',
+    description: 'Try our new drink',
     price: 12000, // 120 TL in kuruş
     isActive: true,
     position: 'top',
     order: 1,
     backgroundColor: '#F8F9FA',
     textColor: '#4B5563',
+    cafeId: '',
+    cafeName: ''
   },
   {
     id: 'promo-2',
-          title: '-50% discount on first 3 drinks',
-          description: 'Special offer for new customers',
+    title: '-50% discount on first 3 drinks',
+    description: 'Special offer for new customers',
     discount: 50,
     discountText: '-50%',
-          buttonText: 'Apply',
+    buttonText: 'Apply',
     buttonAction: 'apply_discount',
     isActive: true,
     position: 'top',
     order: 2,
     backgroundColor: '#F8F9FA',
     textColor: '#4B5563',
+    cafeId: '',
+    cafeName: ''
   },
 ];
 
