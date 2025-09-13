@@ -8,7 +8,7 @@ import {
   UpdatePromotionalCardRequest
 } from '../types/AppConfig';
 
-//HASAN ORUC
+//HASAN ORUC ve maksim
 // Base API configuration
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 const API_ENDPOINTS = {
