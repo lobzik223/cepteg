@@ -41,7 +41,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       description: 'No more waiting in line. Place your order in advance and pick it up at a convenient time.',
       icon: 'cafe',
       color: '#8B5CF6',
-      backgroundImage: require('../assets/images/ba41979f79e8dcc9ae5858850eb5a47a.jpg'),
+      backgroundImage: require('../assets/images/onboarding-1slide.png'),
     },
     {
       id: 2,
