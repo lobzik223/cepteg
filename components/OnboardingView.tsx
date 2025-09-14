@@ -124,8 +124,11 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
             {/* Header with skip button - overlaid on background */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Ionicons name="globe" size={24} color="#fff" />
-                <Text style={styles.appName}>Cepteg</Text>
+                <Image 
+                  source={require('../assets/images/Ct-onboarding-logo.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
               <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
                 <Text style={styles.skipButtonText}>Skip</Text>
@@ -199,11 +202,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  appName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 8,
+  logo: {
+    width: isTablet ? 280 : 260,
+    height: isTablet ? 105 : 95,
+    marginLeft: -75,
+    marginTop: -10,
   },
   skipButton: {
     paddingVertical: 8,
