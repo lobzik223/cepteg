@@ -129,7 +129,7 @@ export class AppConfigService {
     try {
       const response = await this.request<AppConfigResponse>(API_ENDPOINTS.appConfig);
       return response.config;
-    } catch (error) {
+    } catch {
       console.warn('API not available, using default app config');
       return defaultAppConfig;
     }
@@ -151,7 +151,7 @@ export class AppConfigService {
     try {
       const response = await this.request<PromotionalCardsResponse>(API_ENDPOINTS.promotionalCards);
       return response.cards;
-    } catch (error) {
+    } catch {
       console.warn('API not available, using default promotional cards');
       return defaultPromotionalCards;
     }

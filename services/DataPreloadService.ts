@@ -1,3 +1,4 @@
+import { demoCafes } from '../data/demoCafes';
 import { Cafe } from './CafeService';
 import { cafeVideoService } from './CafeVideoService';
 import { productService } from './ProductService';
@@ -136,13 +137,12 @@ export class DataPreloadService {
         progress: 10,
         message: 'Loading video configuration...',
       });
-
       // Get demo cafe data
-      const demoCafes = require('../data/demoCafes').demoCafes;
       const demoCafe = demoCafes.find((c: Cafe) => c.id === cafeId);
       
       if (demoCafe) {
         const videoConfig = cafeVideoService.getVideoConfig(demoCafe);
+        result.data!.videoConfig = videoConfig;
         result.data!.videoConfig = videoConfig;
 
         // Stage 2: Categories (30%)
