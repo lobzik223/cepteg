@@ -23,7 +23,6 @@ interface Slide {
   title: string;
   subtitle: string;
   description: string;
-  icon: 'cafe' | 'pricetag' | 'globe';
   color: string;
   backgroundImage?: any;
 }
@@ -39,7 +38,6 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       title: 'Convenient Orders',
       subtitle: 'Order in advance at any cafe or restaurant',
       description: 'No more waiting in line. Place your order in advance and pick it up at a convenient time.',
-      icon: 'cafe',
       color: '#8B5CF6',
       backgroundImage: require('../assets/images/onboarding-1slide.png'),
     },
@@ -48,7 +46,6 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       title: 'Promocodes & Discounts',
       subtitle: 'Special offers from partners',
       description: 'Get exclusive discounts, promocodes and special offers from your favorite establishments.',
-      icon: 'pricetag',
       color: '#10B981',
       backgroundImage: require('../assets/images/454248c892d14ff7e8cd99d1df641787.jpg'),
     },
@@ -57,7 +54,6 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       title: 'Global Network',
       subtitle: 'Expanding worldwide',
       description: 'We are expanding globally! After pressing "Start", you will be taken to scan the QR code of a cafe that is connected to our app. Access menus from cafes and restaurants around the world.',
-      icon: 'globe',
       color: '#3B82F6',
       backgroundImage: require('../assets/images/25e96aa23181debb60fc90c9f34c32d0.jpg'),
     },
@@ -137,9 +133,6 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
 
             {/* Content */}
             <View style={styles.slideContent}>
-              <View style={[styles.iconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <Ionicons name={slide.icon} size={isTablet ? 48 : 40} color="#fff" />
-              </View>
 
               <Text style={styles.slideTitle}>{slide.title}</Text>
               <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
