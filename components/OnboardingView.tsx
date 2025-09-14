@@ -18,6 +18,7 @@ interface OnboardingViewProps {
   onComplete: () => void;
 }
 
+
 interface Slide {
   id: number;
   title: string;
