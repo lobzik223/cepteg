@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingTop: 20,
     position: 'absolute',
-    bottom: 60,
+    bottom: 80,
     left: 0,
     right: 0,
     zIndex: 10,
