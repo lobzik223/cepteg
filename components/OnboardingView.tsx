@@ -47,7 +47,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       subtitle: 'Special offers from partners',
       description: 'Get exclusive discounts, promocodes and special offers from your favorite establishments.',
       color: '#10B981',
-      backgroundImage: require('../assets/images/454248c892d14ff7e8cd99d1df641787.jpg'),
+      backgroundImage: require('../assets/images/onboarding-2slide.png'),
     },
     {
       id: 3,
@@ -55,7 +55,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       subtitle: 'Expanding worldwide',
       description: 'We are expanding globally! After pressing "Start", you will be taken to scan the QR code of a cafe that is connected to our app. Access menus from cafes and restaurants around the world.',
       color: '#3B82F6',
-      backgroundImage: require('../assets/images/25e96aa23181debb60fc90c9f34c32d0.jpg'),
+      backgroundImage: require('../assets/images/onboarding-3slide.png'),
     },
   ];
 
