@@ -97,24 +97,12 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
           <View key={slide.id} style={styles.slide}>
             {/* Background with photo or color */}
             <View style={styles.backgroundPlaceholder}>
-              {slide.backgroundImage ? (
-                <>
+
                   <Image 
                     source={slide.backgroundImage} 
                     style={styles.backgroundImage}
                     resizeMode="cover"
                   />
-                  <View style={styles.backgroundOverlay}>
-                    <View style={styles.backgroundPattern}>
-                      <Ionicons name={slide.icon} size={120} color={slide.color + '40'} />
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <View style={[styles.backgroundPattern, { backgroundColor: slide.color + '20' }]}>
-                  <Ionicons name={slide.icon} size={120} color={slide.color + '40'} />
-                </View>
-              )}
             </View>
 
             {/* Header with skip button - overlaid on background */}
@@ -133,6 +121,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
 
             {/* Content */}
             <View style={styles.slideContent}>
+
 
               <Text style={styles.slideTitle}>{slide.title}</Text>
               <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
@@ -198,7 +187,7 @@ const styles = StyleSheet.create({
   logo: {
     width: isTablet ? 280 : 260,
     height: isTablet ? 105 : 95,
-    marginLeft: -75,
+    marginLeft: -60,
     marginTop: -10,
   },
   skipButton: {
