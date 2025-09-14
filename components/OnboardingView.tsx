@@ -124,7 +124,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <Ionicons name="globe" size={24} color="#fff" />
-                <Text style={styles.appName}>Coffee Cafe</Text>
+                <Text style={styles.appName}>Cepteg</Text>
               </View>
               <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
                 <Text style={styles.skipButtonText}>Skip</Text>
