@@ -28,6 +28,7 @@ interface Slide {
   backgroundImage?: any;
 }
 
+//test branch
 export default function OnboardingView({ onComplete }: OnboardingViewProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
