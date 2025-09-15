@@ -1,12 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
   createDrawerNavigator,
-  DrawerContentComponentProps,
   DrawerContentScrollView,
-  DrawerItem,
+  DrawerItem
 } from '@react-navigation/drawer';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 import Categories from './Categories';
 import Dashboard from './Dashboard';
@@ -20,136 +25,149 @@ const Drawer = createDrawerNavigator();
 export default function Panel() {
   const [drawerOpen, setDrawerOpen] = useState(true);
 
+  const menuItems = [
+    { name: 'Dashboard', icon: 'grid-outline', component: Dashboard },
+    { name: 'Categories', icon: 'list-outline', component: Categories },
+    { name: 'Products', icon: 'pricetag-outline', component: Products },
+    { name: 'Tables', icon: 'restaurant-outline', component: Tables },
+    { name: 'Orders', icon: 'cart-outline', component: Orders },
+    { name: 'Users', icon: 'people-outline', component: Users },
+  ];
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={s.wrapper}>
       <Drawer.Navigator
         screenOptions={{
-          headerShown: true,
-          headerStyle: { backgroundColor: '#f8f9fa' },
+          headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#111',
           drawerType: 'permanent',
-          drawerStyle: { width: drawerOpen ? 240 : 70, backgroundColor: '#fff' },
+          drawerStyle: {
+            width: drawerOpen ? 240 : 72,
+            backgroundColor: '#fff',
+          },
+          headerLeft: () => null, // default hamburger'ı kaldır
         }}
         drawerContent={(props) => (
-          <CustomDrawerContent {...props} drawerOpen={drawerOpen} />
+          <CustomDrawerContent
+            {...props}
+            menuItems={menuItems}
+            drawerOpen={drawerOpen}
+            setDrawerOpen={setDrawerOpen}
+          />
         )}
       >
-        <Drawer.Screen name="Dashboard" component={Dashboard} />
-        <Drawer.Screen name="Categories" component={Categories} />
-        <Drawer.Screen name="Products" component={Products} />
-        <Drawer.Screen name="Tables" component={Tables} />
-        <Drawer.Screen name="Orders" component={Orders} />
-        <Drawer.Screen name="Users" component={Users} />
+        {menuItems.map((item) => (
+          <Drawer.Screen
+            key={item.name}
+            name={item.name}
+            component={item.component}
+          />
+        ))}
       </Drawer.Navigator>
-
-      {/* Menü daralt / genişlet butonu */}
-      <TouchableOpacity
-        style={styles.toggle}
-        onPress={() => setDrawerOpen(!drawerOpen)}
-      >
-        <Ionicons name="menu" size={24} color="#111" />
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
+/** --- Özel Drawer --- */
 function CustomDrawerContent({
   drawerOpen,
-  navigation,
+  setDrawerOpen,
   state,
-}: DrawerContentComponentProps & { drawerOpen: boolean }) {
-  const items = [
-    { label: 'Dashboard', icon: 'grid-outline' },
-    { label: 'Categories', icon: 'list-outline' },
-    { label: 'Products', icon: 'pricetag-outline' },
-    { label: 'Tables', icon: 'restaurant-outline' },
-    { label: 'Orders', icon: 'cart-outline' },
-    { label: 'Users', icon: 'people-outline' },
-  ];
-
-  // hangi route seçili?
+  navigation,
+  menuItems,
+}: any) {
   const activeRoute = state.routeNames[state.index];
 
   return (
-    <DrawerContentScrollView contentContainerStyle={styles.drawerContent}>
-      <Text style={styles.brand}>{drawerOpen ? 'Admin Panel' : 'AP'}</Text>
+    <DrawerContentScrollView
+      contentContainerStyle={s.drawerScroll}
+      scrollEnabled={true}
+    >
+      {/* Üst başlık ve menü daralt/expand butonu */}
+      <View style={s.brandRow}>
+        <Text style={s.brandText}>
+          {drawerOpen ? '☕ Cafe Admin' : 'CA'}
+        </Text>
+        <TouchableOpacity
+          style={s.toggleBtn}
+          onPress={() => setDrawerOpen((v: boolean) => !v)}
+        >
+          <Ionicons name="menu" size={22} color="#111" />
+        </TouchableOpacity>
+      </View>
 
-      {items.map((it) => {
-        const focused = activeRoute === it.label;
+      {/* Menü linkleri */}
+      {menuItems.map((it: any) => {
+        const focused = activeRoute === it.name;
         return (
           <DrawerItem
-            key={it.label}
-            label={drawerOpen ? it.label : ''}
+            key={it.name}
+            label={drawerOpen ? it.name : ''}
             icon={() => (
               <Ionicons
                 name={it.icon as any}
                 size={22}
-                color={focused ? '#3b82f6' : '#6b7280'} // aktif olan mavi, diğerleri gri
+                color={focused ? '#2563eb' : '#6b7280'}
               />
             )}
-            labelStyle={[
-              styles.label,
-              focused && { color: '#3b82f6', fontWeight: '700' },
-            ]}
             style={[
-              styles.drawerItem,
-              focused && { backgroundColor: '#e0f2fe' }, // aktif arka plan hafif mavi
+              s.drawerItem,
+              focused && { backgroundColor: '#dbeafe' },
             ]}
-            onPress={() => navigation.navigate(it.label)}
+            labelStyle={[
+              s.drawerLabel,
+              focused && { color: '#2563eb', fontWeight: '700' },
+            ]}
+            onPress={() => navigation.navigate(it.name)}
           />
         );
       })}
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>© {new Date().getFullYear()}</Text>
+      {/* Footer */}
+      <View style={s.footer}>
+        <Text style={s.footerText}>© {new Date().getFullYear()} CafeApp</Text>
       </View>
     </DrawerContentScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+/** --- Stil --- */
+const s = StyleSheet.create({
+  wrapper: { flex: 1 },
+  drawerScroll: { flex: 1, paddingTop: 0 },
+  brandRow: {
     flexDirection: 'row',
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  toggle: {
-    position: 'absolute',
-    top: 15,
-    left: 15,
-    padding: 8,
+  brandText: { fontSize: 18, fontWeight: '800', color: '#111' },
+  toggleBtn: {
+    padding: 6,
     borderRadius: 8,
-    backgroundColor: '#e5e7eb',
-  },
-  drawerContent: {
-    flex: 1,
-  },
-  brand: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111',
-    textAlign: 'center',
-    marginBottom: 20,
+    backgroundColor: '#f3f4f6',
   },
   drawerItem: {
-    borderRadius: 8,
     marginHorizontal: 8,
     marginVertical: 2,
+    borderRadius: 8,
   },
-  label: {
+  drawerLabel: {
+    fontSize: 15,
     color: '#111',
     fontWeight: '600',
-    fontSize: 15,
   },
   footer: {
     marginTop: 'auto',
-    padding: 12,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },
   footerText: {
+    textAlign: 'center',
     color: '#6b7280',
     fontSize: 12,
-    textAlign: 'center',
   },
 });
