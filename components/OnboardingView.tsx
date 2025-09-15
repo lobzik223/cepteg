@@ -55,7 +55,7 @@ export default function OnboardingView({ onComplete }: OnboardingViewProps) {
       subtitle: 'Expanding worldwide',
       description: 'We are expanding globally! After pressing "Start", you will be taken to scan the QR code of a cafe that is connected to our app. Access menus from cafes and restaurants around the world.',
       color: '#3B82F6',
-      backgroundImage: require('../assets/images/onboarding-3slide.png'),
+      backgroundImage: require('../assets/images/ba41979f79e8dcc9ae5858850eb5a47a.jpg'),
     },
   ];
 
