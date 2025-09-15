@@ -46,8 +46,13 @@ export class CafeService {
    */
   async validateCafe(cafeId: string): Promise<CafeValidationResponse> {
     try {
+      console.log('🔍 CafeService.validateCafe called with:', cafeId);
+      console.log('🔍 Available demo cafes:', demoCafes.map(c => c.id));
+      
       // For demo purposes, check local demo cafes first
       const demoCafe = demoCafes.find(cafe => cafe.id === cafeId);
+      console.log('🔍 Found demo cafe:', demoCafe);
+      
       if (demoCafe) {
         return {
           cafe: demoCafe,

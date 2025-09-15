@@ -1,24 +1,10 @@
 import { Cafe } from '../services/CafeService';
 
 export const demoCafes: Cafe[] = [
-  {
-    id: 'demo_cafe_001',
-    name: 'AKAFE',
-    location: 'Moscow, Arbat St. 1',
-    description: 'Cozy cafe in the center of Moscow with excellent coffee and desserts',
-    logoUrl: 'https://example.com/akafe-logo.png',
-    apiEndpoint: 'http://localhost:3000/api',
-    isActive: true,
-    categories: ['for-you', 'new', 'milk-coffee', 'iced-drinks', 'hot-drinks'],
-    videoConfig: {
-      localVideoPath: 'coffee_video.mp4', // Original coffee video
-      fallbackColors: ['#E8F4FD', '#D1E7DD', '#C3E9C0'],
-      videoPosition: 'center',
-    },
-  },
+  // Coffee House Network
   {
     id: 'demo_cafe_002',
-    name: 'Coffee House',
+    name: 'Coffee House - Nevsky',
     location: 'St. Petersburg, Nevsky Prospect 50',
     description: 'Modern coffee space with signature drinks',
     logoUrl: 'https://example.com/coffee-house-logo.png',
@@ -26,8 +12,38 @@ export const demoCafes: Cafe[] = [
     isActive: true,
     categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
     videoConfig: {
-      localVideoPath: 'coffee_house_video.mp4', // Coffee House specific video
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'], // Warm coffee colors
+      localVideoPath: 'coffee_house_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
+      videoPosition: 'left',
+    },
+  },
+  {
+    id: 'demo_cafe_005',
+    name: 'Coffee House - Moscow',
+    location: 'Moscow, Red Square 1',
+    description: 'Historic location with premium coffee experience',
+    logoUrl: 'https://example.com/coffee-house-logo.png',
+    apiEndpoint: 'http://localhost:3001/api',
+    isActive: true,
+    categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
+    videoConfig: {
+      localVideoPath: 'coffee_house_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
+      videoPosition: 'left',
+    },
+  },
+  {
+    id: 'demo_cafe_006',
+    name: 'Coffee House - Kazan',
+    location: 'Kazan, Kremlin St. 10',
+    description: 'Cultural hub with artisanal coffee blends',
+    logoUrl: 'https://example.com/coffee-house-logo.png',
+    apiEndpoint: 'http://localhost:3001/api',
+    isActive: true,
+    categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
+    videoConfig: {
+      localVideoPath: 'coffee_house_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
       videoPosition: 'left',
     },
   },
@@ -46,16 +62,86 @@ export const demoCafes: Cafe[] = [
       videoPosition: 'right',
     },
   },
+  // Emrahkeba Network
+  {
+    id: 'demo_cafe_004',
+    name: 'Emrahkeba - Taksim',
+    location: 'Istanbul, Taksim Square 25',
+    description: 'Authentic Turkish restaurant with traditional kebabs and drinks',
+    logoUrl: 'https://example.com/emrahkeba-logo.png',
+    apiEndpoint: 'http://localhost:3003/api',
+    isActive: true,
+    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
+    videoConfig: {
+      localVideoPath: 'coffee_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
+      videoPosition: 'center',
+    },
+  },
+  {
+    id: 'demo_cafe_007',
+    name: 'Emrahkeba - Sultanahmet',
+    location: 'Istanbul, Sultanahmet Square 5',
+    description: 'Historic location with traditional Turkish cuisine',
+    logoUrl: 'https://example.com/emrahkeba-logo.png',
+    apiEndpoint: 'http://localhost:3003/api',
+    isActive: true,
+    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
+    videoConfig: {
+      localVideoPath: 'coffee_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
+      videoPosition: 'center',
+    },
+  },
+  {
+    id: 'demo_cafe_008',
+    name: 'Emrahkeba - Kadikoy',
+    location: 'Istanbul, Kadikoy Market 12',
+    description: 'Local favorite with fresh ingredients and family recipes',
+    logoUrl: 'https://example.com/emrahkeba-logo.png',
+    apiEndpoint: 'http://localhost:3003/api',
+    isActive: true,
+    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
+    videoConfig: {
+      localVideoPath: 'coffee_video.mp4',
+      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
+      videoPosition: 'center',
+    },
+  },
 ];
+
+// Network definitions
+export const cafeNetworks = {
+  'Coffee House': {
+    name: 'Coffee House',
+    description: 'Premium coffee chain with locations across Russia',
+    cafes: ['demo_cafe_002', 'demo_cafe_005', 'demo_cafe_006'],
+    logoUrl: 'https://example.com/coffee-house-network-logo.png',
+  },
+  'Emrahkeba': {
+    name: 'Emrahkeba',
+    description: 'Authentic Turkish restaurant chain in Istanbul',
+    cafes: ['demo_cafe_004', 'demo_cafe_007', 'demo_cafe_008'],
+    logoUrl: 'https://example.com/emrahkeba-network-logo.png',
+  },
+  'Brew & Bean': {
+    name: 'Brew & Bean',
+    description: 'Artisanal coffee roasters with unique blends',
+    cafes: ['demo_cafe_003'],
+    logoUrl: 'https://example.com/brew-bean-network-logo.png',
+  },
+};
+
+// Helper function to get cafes by network name
+export const getCafesByNetwork = (networkName: string): Cafe[] => {
+  const network = cafeNetworks[networkName as keyof typeof cafeNetworks];
+  if (!network) return [];
+  
+  return demoCafes.filter(cafe => network.cafes.includes(cafe.id));
+};
 
 // Demo QR codes for testing
 export const demoQRCodes = {
-  akafe: {
-    cafeId: 'demo_cafe_001',
-    cafeName: 'AKAFE',
-    location: 'Moscow, Arbat St. 1',
-    apiEndpoint: 'http://localhost:3000/api'
-  },
   coffeeHouse: {
     cafeId: 'demo_cafe_002',
     cafeName: 'Coffee House',
@@ -67,5 +153,11 @@ export const demoQRCodes = {
     cafeName: 'Brew & Bean',
     location: 'Kazan, Bauman St. 15',
     apiEndpoint: 'http://localhost:3002/api'
+  },
+  emrahkeba: {
+    cafeId: 'demo_cafe_004',
+    cafeName: 'Emrahkeba',
+    location: 'Istanbul, Taksim Square 25',
+    apiEndpoint: 'http://localhost:3003/api'
   }
 };

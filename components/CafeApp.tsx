@@ -3,13 +3,13 @@ import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Cafe, cafeService } from '../services/CafeService';
 import { cafeStorageService, TenantData } from '../services/CafeStorageService';
@@ -19,12 +19,13 @@ import OnboardingView from './OnboardingView';
 import ProfileView from './ProfileView';
 import { QRScannerView } from './QRScannerView';
 import { QRTestPanel } from './QRTestPanel';
+import { SearchView } from './SearchView';
 import SplashScreen from './SplashScreen';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
 
-type AppState = 'onboarding' | 'qr-scanner' | 'splash' | 'home' | 'loading' | 'qr-test' | 'profile';
+type AppState = 'onboarding' | 'qr-scanner' | 'search' | 'splash' | 'home' | 'loading' | 'qr-test' | 'profile';
 
 export const CafeApp: React.FC = () => {
   const router = useRouter();
@@ -34,6 +35,7 @@ export const CafeApp: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [preloadedData, setPreloadedData] = useState<any>(null);
+  const [searchData, setSearchData] = useState<{networkName: string, cafes: Cafe[]} | null>(null);
 
   // Get configuration from app.config.js
   const config = Constants.expoConfig?.extra || {};
@@ -113,11 +115,14 @@ export const CafeApp: React.FC = () => {
   };
 
   const handleQRScan = async (cafeData: any) => {
+    console.log('🔍 handleQRScan called with:', cafeData);
     setIsValidating(true);
     
     try {
       // Validate cafe in our global network
+      console.log('🔍 Validating cafe:', cafeData.cafeId);
       const validation = await cafeService.validateCafe(cafeData.cafeId);
+      console.log('🔍 Validation result:', validation);
       
       if (!validation.isValid) {
         Alert.alert(
@@ -148,11 +153,6 @@ export const CafeApp: React.FC = () => {
 
       setSelectedCafe(validation.cafe);
       setAppState('splash');
-      
-      // Show splash for 2 seconds then go to home
-      setTimeout(() => {
-        setAppState('home');
-      }, 2000);
       
     } catch (error) {
       Alert.alert(
@@ -209,6 +209,23 @@ export const CafeApp: React.FC = () => {
   const handleOnboardingComplete = async () => {
     await OnboardingService.markOnboardingCompleted();
     setAppState('qr-scanner');
+  };
+
+  const handleSplashComplete = () => {
+    console.log('🎬 SplashScreen completed, transitioning to HomeView');
+    setAppState('home');
+  };
+
+  const handleNetworkSearch = (networkName: string, cafes: Cafe[]) => {
+    console.log('🔍 Network search triggered:', networkName, cafes);
+    setSearchData({ networkName, cafes });
+    setAppState('search');
+  };
+
+  const handleCafeSelected = (cafe: Cafe) => {
+    console.log('🏪 Cafe selected from search:', cafe);
+    setSelectedCafe(cafe);
+    setAppState('splash');
   };
 
 
@@ -273,17 +290,6 @@ export const CafeApp: React.FC = () => {
       [
         { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'AKAFE',
-                  onPress: () => {
-                    handleQRScan({
-                      cafeId: 'demo_cafe_001',
-                      cafeName: 'AKAFE',
-                      location: 'Moscow, Arbat St. 1',
-                      apiEndpoint: 'http://localhost:3000/api'
-                    });
-                  }
-                },
-                {
                   text: 'Coffee House',
                   onPress: () => {
                     handleQRScan({
@@ -302,6 +308,17 @@ export const CafeApp: React.FC = () => {
                       cafeName: 'Brew & Bean',
                       location: 'Kazan, Bauman St. 15',
                       apiEndpoint: 'http://localhost:3002/api'
+                    });
+                  }
+                },
+                {
+                  text: 'Emrahkeba',
+                  onPress: () => {
+                    handleQRScan({
+                      cafeId: 'demo_cafe_004',
+                      cafeName: 'Emrahkeba',
+                      location: 'Istanbul, Taksim Square 25',
+                      apiEndpoint: 'http://localhost:3003/api'
                     });
                   }
                 }
@@ -336,6 +353,7 @@ export const CafeApp: React.FC = () => {
       return (
         <QRScannerView 
           onCafeScanned={handleQRScan}
+          onNetworkSearch={handleNetworkSearch}
           onClose={async () => {
             await OnboardingService.resetOnboarding();
             setAppState('onboarding');
@@ -343,14 +361,21 @@ export const CafeApp: React.FC = () => {
         />
       );
     
+    case 'search':
+      return (
+        <SearchView 
+          networkName={searchData?.networkName || ''}
+          cafes={searchData?.cafes || []}
+          onCafeSelected={handleCafeSelected}
+          onClose={() => setAppState('qr-scanner')}
+        />
+      );
+    
     case 'splash':
       return (
         <SplashScreen 
           cafe={selectedCafe}
-          onFinish={(data) => {
-            setPreloadedData(data);
-            setAppState('home');
-          }}
+          onFinish={handleSplashComplete}
         />
       );
     

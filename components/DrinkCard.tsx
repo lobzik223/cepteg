@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
   Dimensions,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -35,6 +36,7 @@ interface DrinkCardProps {
   price: string;
   badge?: string | null;
   badgePosition: BadgePosition;
+  imageUrl?: string;
   onPress?: () => void;
   onAddToCart?: () => void;
 }
@@ -45,16 +47,28 @@ export default function DrinkCard({
   price,
   badge,
   badgePosition,
+  imageUrl,
   onPress,
   onAddToCart,
 }: DrinkCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.imageContainer}>
-        {/* Image placeholder */}
-        <View style={styles.imagePlaceholder}>
-          <Ionicons name="cafe" size={isTablet ? 80 : 50} color="#6B7280" />
-        </View>
+        {/* Product Image */}
+        {imageUrl ? (
+          <Image 
+            source={typeof imageUrl === 'string' ? { uri: imageUrl } : imageUrl} 
+            style={styles.productImage}
+            resizeMode="cover"
+            onError={() => {
+              console.log('Image failed to load, showing placeholder');
+            }}
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="cafe" size={isTablet ? 80 : 50} color="#6B7280" />
+          </View>
+        )}
         
         {/* Badge */}
         {badge && badgePosition !== 'none' && (
@@ -126,6 +140,13 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     marginBottom: isTablet ? 20 : 16,
+  },
+  productImage: {
+    height: isTablet 
+      ? (isLandscape ? 140 : 180) 
+      : isSmallScreen ? 100 : 120,
+    width: '100%',
+    borderRadius: isTablet ? 20 : isSmallScreen ? 8 : 12,
   },
   imagePlaceholder: {
     height: isTablet 

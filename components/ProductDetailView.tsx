@@ -2,15 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { ResizeMode, Video } from 'expo-av';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
@@ -58,13 +58,16 @@ export default function ProductDetailView({
     onClose();
   };
 
-  const renderVideoSection = () => {
+  const renderImageSection = () => {
+    // Проверяем, является ли imageUrl строкой (для видео URL)
+    const isVideoUrl = typeof product.imageUrl === 'string' && product.imageUrl.includes('.mp4');
+    
     // Если есть видео URL, показываем видео
-    if (product.imageUrl && product.imageUrl.includes('.mp4')) {
+    if (isVideoUrl) {
       return (
-        <View style={styles.videoContainer}>
+        <View style={styles.imageContainer}>
           <Video
-            style={styles.video}
+            style={styles.productImage}
             source={{ uri: product.imageUrl }}
             resizeMode={ResizeMode.COVER}
             shouldPlay
@@ -81,22 +84,32 @@ export default function ProductDetailView({
             }}
           />
           {!videoLoaded && !videoError && (
-            <View style={styles.videoPlaceholder}>
+            <View style={styles.imagePlaceholder}>
               <ActivityIndicator size="large" color="#666" />
-              <Text style={styles.videoPlaceholderText}>Loading video...</Text>
+              <Text style={styles.imagePlaceholderText}>Loading...</Text>
             </View>
           )}
         </View>
       );
     }
 
-    // Иначе показываем изображение или плейсхолдер
+    // Показываем изображение товара
     return (
       <View style={styles.imageContainer}>
-        <View style={styles.imagePlaceholder}>
-          <Ionicons name="cafe" size={isTablet ? 120 : 80} color="#6B7280" />
-        </View>
-        <Text style={styles.imageText}>How we make {product.name}</Text>
+        {product.imageUrl ? (
+          <Image 
+            source={product.imageUrl} 
+            style={styles.productImage}
+            resizeMode="cover"
+            onError={() => {
+              console.log('Image failed to load, showing placeholder');
+            }}
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="cafe" size={isTablet ? 120 : 80} color="#6B7280" />
+          </View>
+        )}
       </View>
     );
   };
@@ -248,8 +261,8 @@ export default function ProductDetailView({
 
         {/* Scrollable Content */}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Video Section - Now scrollable */}
-          {renderVideoSection()}
+          {/* Product Image Section */}
+          {renderImageSection()}
           {/* Product Title and Tagline */}
           <View style={styles.titleSection}>
             <Text style={styles.productName}>{product.name}</Text>
@@ -396,16 +409,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  videoContainer: {
+  imageContainer: {
     height: isTablet ? 450 : 400,
     backgroundColor: '#f0f0f0',
     marginTop: 0,
+    overflow: 'hidden',
   },
-  video: {
+  productImage: {
     width: '100%',
     height: '100%',
   },
-  videoPlaceholder: {
+  imagePlaceholder: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -415,31 +429,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
   },
-  videoPlaceholderText: {
+  imagePlaceholderText: {
     marginTop: 10,
     fontSize: 16,
     color: '#666',
-  },
-  imageContainer: {
-    height: isTablet ? 450 : 400,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 0,
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  imageText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
   },
   customizationSection: {
     marginBottom: 20,

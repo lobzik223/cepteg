@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useProducts } from '../hooks/useProducts';
@@ -42,7 +42,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('for-you');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDetailVisible, setIsProductDetailVisible] = useState(false);
-  const [cartItems, setCartItems] = useState<Array<{product: Product, quantity: number}>>([]);
+  const [cartItems, setCartItems] = useState<{product: Product, quantity: number}[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [cartAnimation] = useState(new Animated.Value(0));
   const [pulseAnimation] = useState(new Animated.Value(1));
@@ -52,14 +52,34 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
   // Category mapping for display and API
-  const categoryMapping: Record<ProductCategory, { display: string; api: string }> = {
-    'for-you': { display: 'For You', api: 'for-you' },
-    'new': { display: 'New', api: 'new' },
-    'milk-coffee': { display: 'Milk Coffee', api: 'milk-coffee' },
-    'iced-drinks': { display: 'Iced Drinks', api: 'iced-drinks' },
-    'hot-drinks': { display: 'Hot Drinks', api: 'hot-drinks' },
-    'desserts': { display: 'Desserts', api: 'desserts' },
-    'food': { display: 'Food', api: 'food' },
+  // Dynamic category display names - can be extended from API
+  const getCategoryDisplayName = (category: ProductCategory): string => {
+    const displayNames: Record<string, string> = {
+      'for-you': 'For You',
+      'new': 'New',
+      'milk-coffee': 'Milk Coffee',
+      'iced-coffee': 'Iced Coffee',
+      'iced-drinks': 'Iced Drinks',
+      'cold-drinks': 'Cold Drinks',
+      'hot-drinks': 'Hot Drinks',
+      'desserts': 'Desserts',
+      'food': 'Food',
+      'kebabs': 'Kebabs',
+      'appetizers': 'Appetizers',
+      'main-dishes': 'Main Dishes',
+      'salads': 'Salads',
+      'beverages': 'Beverages',
+      'coffee': 'Coffee',
+      'tea': 'Tea',
+      'juices': 'Juices',
+      'smoothies': 'Smoothies',
+      'snacks': 'Snacks',
+      'breakfast': 'Breakfast',
+      'lunch': 'Lunch',
+      'dinner': 'Dinner',
+    };
+    
+    return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ');
   };
 
   // Use dynamic categories from selected cafe or preloaded data
@@ -189,6 +209,22 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
     setIsCheckoutModalVisible(false);
   };
 
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    setCartItems(prevItems => 
+      prevItems.map(item => 
+        item.product.id === productId 
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    setCartItems(prevItems => 
+      prevItems.filter(item => item.product.id !== productId)
+    );
+  };
+
   const openCartModal = () => {
     if (cartItems.length === 0) {
       return; // Don't open if cart is empty
@@ -297,8 +333,15 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                   <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
-              <Ionicons name="cafe" size={isTablet ? 40 : 32} color="#FFFFFF" />
-              <Text style={styles.logoText}>{cafe?.name || 'Coffee Cafe'}</Text>
+              <View style={styles.cafeInfoContainer}>
+                <Ionicons name="cafe" size={isTablet ? 40 : 32} color="#FFFFFF" />
+                <View style={styles.cafeTextContainer}>
+                  <Text style={styles.logoText}>{cafe?.name || 'Coffee Cafe'}</Text>
+                  {cafe?.location && (
+                    <Text style={styles.locationText}>{cafe.location}</Text>
+                  )}
+                </View>
+              </View>
             </View>
             
             {/* Profile button */}
@@ -354,7 +397,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                     selectedCategory === category && styles.selectedCategoryText
                   ]}
                 >
-                  {categoryMapping[category]?.display || category}
+                  {getCategoryDisplayName(category)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -363,7 +406,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
           {/* Category products - AKAFE: 6 categories total */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {categoryMapping[selectedCategory].display}
+              {getCategoryDisplayName(selectedCategory)}
             </Text>
             {loading ? (
               <View style={styles.loadingContainer}>
@@ -387,6 +430,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                     price={formatPrice(drink.price)}
                     badge={drink.badge?.text || null}
                     badgePosition={drink.badge?.position || 'none'}
+                    imageUrl={drink.imageUrl}
                     onPress={() => handleProductPress(drink)}
                     onAddToCart={() => addToCart(drink)}
                   />
@@ -397,7 +441,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                 <Ionicons name="cafe-outline" size={isTablet ? 80 : 60} color="#9CA3AF" />
                 <Text style={styles.emptyStateTitle}>No products in this category</Text>
                 <Text style={styles.emptyStateText}>
-                  Add products to "{categoryMapping[selectedCategory].display}" category through the admin panel
+                  Add products to &quot;{getCategoryDisplayName(selectedCategory)}&quot; category through the admin panel
                 </Text>
               </View>
             )}
@@ -428,6 +472,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                     price={formatPrice(drink.price)}
                     badge={drink.badge?.text || null}
                     badgePosition={drink.badge?.position || 'none'}
+                    imageUrl={drink.imageUrl}
                     onPress={() => handleProductPress(drink)}
                     onAddToCart={() => addToCart(drink)}
                   />
@@ -464,6 +509,8 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         onClose={() => setIsCheckoutModalVisible(false)}
         cartItems={cartItems}
         onOrderSuccess={handleOrderSuccess}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
       />
 
 
@@ -654,7 +701,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: isTablet ? 70 : 20,
-    paddingTop: isTablet ? 60 : 50, // Увеличиваем отступ для SafeArea
+    paddingTop: isTablet ? 25 : 20, // Поднимаем информацию о кафе еще выше
     paddingBottom: 20,
   },
   logoContainer: {
@@ -665,11 +712,29 @@ const styles = StyleSheet.create({
     marginRight: isTablet ? 15 : 10,
     padding: 5,
   },
+  cafeInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cafeTextContainer: {
+    marginLeft: isTablet ? 12 : 8,
+  },
   logoText: {
     fontSize: isTablet ? 34 : isSmallScreen ? 18 : 20,
     fontWeight: '600',
-    marginLeft: isTablet ? 20 : 8,
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  locationText: {
+    fontSize: isTablet ? 16 : isSmallScreen ? 12 : 14,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   profileButton: {
     padding: 8,
