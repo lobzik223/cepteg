@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
+import { PromoCodesSection } from './PromoCodesSection';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -31,6 +32,7 @@ interface CheckoutModalProps {
   onOrderSuccess: () => void;
   onUpdateQuantity?: (productId: string, quantity: number) => void;
   onRemoveItem?: (productId: string) => void;
+  cafeId?: string;
 }
 
 export default function CheckoutModal({ 
@@ -39,7 +41,8 @@ export default function CheckoutModal({
   cartItems, 
   onOrderSuccess,
   onUpdateQuantity,
-  onRemoveItem
+  onRemoveItem,
+  cafeId
 }: CheckoutModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -101,6 +104,9 @@ export default function CheckoutModal({
   };
 
   const handlePaymentSubmit = async () => {
+    console.log('CheckoutModal: handlePaymentSubmit called');
+    console.log('CheckoutModal: cartItems:', cartItems);
+    
     // Validate form
     if (!cardNumber || !expiryDate || !cvv || !cardholderName || !email) {
       alert('Please fill in all payment details');
@@ -125,7 +131,9 @@ export default function CheckoutModal({
       // };
       // await fetch('/api/payments', { method: 'POST', body: JSON.stringify(paymentData) });
 
+      console.log('CheckoutModal: calling onOrderSuccess');
       onOrderSuccess();
+      console.log('CheckoutModal: calling onClose');
       onClose();
     } catch (error) {
       console.error('Payment failed:', error);
@@ -205,13 +213,15 @@ export default function CheckoutModal({
   const renderPaymentForm = () => (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="#333" />
+        <TouchableOpacity style={styles.backButton} onPress={() => setShowPaymentForm(false)}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Payment Details</Text>
+        <View style={styles.paymentTitleContainer}>
+          <Text style={styles.title}>Payment Details</Text>
+        </View>
         
         <View style={styles.paymentSection}>
           <Text style={styles.sectionTitle}>Card Information</Text>
@@ -321,6 +331,23 @@ export default function CheckoutModal({
           {cartItems.map((item, index) => renderCartItem(item, index))}
         </View>
 
+        {/* Promo codes section */}
+        {cafeId && (
+          <View style={styles.promoSection}>
+            <PromoCodesSection
+              cafeId={cafeId}
+              onPromoCodePress={(promoCode) => {
+                console.log('Promo code pressed:', promoCode.title);
+                // Handle promo code press - could show details or apply
+              }}
+              onPromoCodeApply={(promoCode) => {
+                console.log('Promo code apply:', promoCode.title);
+                // Handle promo code application
+              }}
+            />
+          </View>
+        )}
+
         <View style={styles.totalContainer}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
@@ -377,11 +404,24 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   closeButton: {
     width: 40,
@@ -401,6 +441,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   titleContainer: {
+    marginBottom: 20,
+  },
+  paymentTitleContainer: {
+    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
@@ -647,6 +691,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#007AFF',
+  },
+  promoSection: {
+    marginBottom: 16,
   },
 });
 

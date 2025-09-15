@@ -21,6 +21,7 @@ import { formatPrice } from '../utils/priceFormatter';
 import CafeVideoView from './CafeVideoView';
 import CheckoutModal from './CheckoutModal';
 import DrinkCard from './DrinkCard';
+import { MyOrderSection } from './MyOrderSection';
 import ProductDetailView from './ProductDetailView';
 import ProfileModal from './ProfileModal';
 import { PromoCodesSection } from './PromoCodesSection';
@@ -48,6 +49,9 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   const [pulseAnimation] = useState(new Animated.Value(1));
   const [showCart, setShowCart] = useState(false);
   const [isCartModalVisible, setIsCartModalVisible] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<{product: Product, quantity: number}[]>([]);
+  
+  console.log('HomeView render - currentOrder:', currentOrder);
   const [isCheckoutModalVisible, setIsCheckoutModalVisible] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
@@ -204,10 +208,15 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
 
 
   const handleOrderSuccess = () => {
+    console.log('handleOrderSuccess called, cartItems:', cartItems);
+    // Сохраняем заказ перед очисткой корзины
+    setCurrentOrder([...cartItems]);
+    console.log('currentOrder set to:', [...cartItems]);
     setCartItems([]);
     setCartTotal(0);
     setIsCheckoutModalVisible(false);
   };
+
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
     setCartItems(prevItems => 
@@ -352,10 +361,15 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         </View>
 
 
-        {/* Demo mode indicator */}
-        <View style={styles.demoModeIndicator}>
-          <Text style={styles.demoModeText}>Demo Mode - Using sample data</Text>
-        </View>
+
+        {/* My Order section */}
+        {currentOrder.length > 0 && (
+          <MyOrderSection
+            orderItems={currentOrder}
+            orderNumber="#12345"
+            orderStatus="accepted"
+          />
+        )}
 
         {/* Promo codes section */}
         {cafe?.id && (
@@ -511,6 +525,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         onOrderSuccess={handleOrderSuccess}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        cafeId={cafe?.id}
       />
 
 
@@ -1109,21 +1124,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
-  },
-  demoModeIndicator: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-  },
-  demoModeText: {
-    color: '#92400E',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });
