@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { Redirect, router } from 'expo-router';
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -35,6 +36,11 @@ const filteredMenuItems = menuItems.filter(it =>
 
   // role değişince Drawer yeniden mount olsun (guest -> CEPEG_ADMIN)
   const drawerKey = `drawer-${normalizedRole ?? 'guest'}`;
+
+  // Auth guard: kullanıcı yoksa deklaratif yönlendirme
+  if (!user) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <SafeAreaView style={s.wrapper}>
@@ -84,6 +90,7 @@ function CustomDrawerContent({
   navigation,
   menuItems,
 }: any) {
+  const { logout } = useAuth();
   const activeRoute = state.routeNames[state.index];
 
   return (
@@ -116,6 +123,10 @@ function CustomDrawerContent({
       })}
 
       <View style={s.footer}>
+        <TouchableOpacity style={s.logoutBtn} onPress={() => { logout(); router.replace('/login' as any); }}>
+          <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+          <Text style={s.logoutText}>Çıkış Yap</Text>
+        </TouchableOpacity>
         <Text style={s.footerText}>© {new Date().getFullYear()} CafeApp</Text>
       </View>
     </DrawerContentScrollView>
@@ -140,4 +151,6 @@ const s = StyleSheet.create({
   drawerLabel: { fontSize: 15, color: '#111', fontWeight: '600' },
   footer: { marginTop: 'auto', paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   footerText: { textAlign: 'center', color: '#6b7280', fontSize: 12 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10 },
+  logoutText: { color: '#ef4444', fontWeight: '700' },
 });
