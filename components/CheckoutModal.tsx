@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
+import { PromoCodesSection } from './PromoCodesSection';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -28,13 +30,19 @@ interface CheckoutModalProps {
   onClose: () => void;
   cartItems: CartItem[];
   onOrderSuccess: () => void;
+  onUpdateQuantity?: (productId: string, quantity: number) => void;
+  onRemoveItem?: (productId: string) => void;
+  cafeId?: string;
 }
 
 export default function CheckoutModal({ 
   visible, 
   onClose, 
   cartItems, 
-  onOrderSuccess 
+  onOrderSuccess,
+  onUpdateQuantity,
+  onRemoveItem,
+  cafeId
 }: CheckoutModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -50,6 +58,31 @@ export default function CheckoutModal({
     return cartItems.reduce((total, item) => {
       return total + (item.product.price * item.quantity);
     }, 0);
+  };
+
+  const handleIncreaseQuantity = (productId: string) => {
+    if (onUpdateQuantity) {
+      const item = cartItems.find(item => item.product.id === productId);
+      if (item) {
+        onUpdateQuantity(productId, item.quantity + 1);
+      }
+    }
+  };
+
+  const handleDecreaseQuantity = (productId: string) => {
+    if (onUpdateQuantity) {
+      const item = cartItems.find(item => item.product.id === productId);
+      if (item) {
+        if (item.quantity > 1) {
+          onUpdateQuantity(productId, item.quantity - 1);
+        } else {
+          // Remove item if quantity becomes 0
+          if (onRemoveItem) {
+            onRemoveItem(productId);
+          }
+        }
+      }
+    }
   };
 
   const formatCardNumber = (text: string) => {
@@ -71,6 +104,9 @@ export default function CheckoutModal({
   };
 
   const handlePaymentSubmit = async () => {
+    console.log('CheckoutModal: handlePaymentSubmit called');
+    console.log('CheckoutModal: cartItems:', cartItems);
+    
     // Validate form
     if (!cardNumber || !expiryDate || !cvv || !cardholderName || !email) {
       alert('Please fill in all payment details');
@@ -95,7 +131,9 @@ export default function CheckoutModal({
       // };
       // await fetch('/api/payments', { method: 'POST', body: JSON.stringify(paymentData) });
 
+      console.log('CheckoutModal: calling onOrderSuccess');
       onOrderSuccess();
+      console.log('CheckoutModal: calling onClose');
       onClose();
     } catch (error) {
       console.error('Payment failed:', error);
@@ -108,31 +146,82 @@ export default function CheckoutModal({
 
   const renderCartItem = (item: CartItem, index: number) => (
     <View key={index} style={styles.cartItem}>
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.product.name}</Text>
-        <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
-        {item.customizations && (
-          <Text style={styles.itemCustomizations}>
-            Size: {item.customizations.size || 'Medium'}
-          </Text>
+      {/* Product Image */}
+      <View style={styles.itemImageContainer}>
+        {item.product.imageUrl ? (
+          <Image
+            source={typeof item.product.imageUrl === 'string' ? { uri: item.product.imageUrl } : item.product.imageUrl}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.itemImagePlaceholder}>
+            <Ionicons name="cafe-outline" size={24} color="#9CA3AF" />
+          </View>
         )}
       </View>
-      <Text style={styles.itemPrice}>
-        {formatPrice(item.product.price * item.quantity)}
-      </Text>
+
+      {/* Product Details */}
+      <View style={styles.itemDetails}>
+        <Text style={styles.itemName}>{item.product.name}</Text>
+        {item.product.description && (
+          <Text style={styles.itemDescription} numberOfLines={2}>
+            {item.product.description}
+          </Text>
+        )}
+        
+        {/* Quantity and Customizations */}
+        <View style={styles.itemMeta}>
+          <View style={styles.quantityContainer}>
+            <TouchableOpacity 
+              onPress={() => handleDecreaseQuantity(item.product.id)}
+              style={styles.quantityButton}
+            >
+              <Ionicons name="remove-circle-outline" size={20} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.quantityText}>{item.quantity}</Text>
+            <TouchableOpacity 
+              onPress={() => handleIncreaseQuantity(item.product.id)}
+              style={styles.quantityButton}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          
+          {item.customizations && (
+            <View style={styles.customizationsContainer}>
+              <Text style={styles.customizationText}>
+                Size: {item.customizations.size || 'Medium'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Price */}
+      <View style={styles.itemPriceContainer}>
+        <Text style={styles.itemPrice}>
+          {formatPrice(item.product.price * item.quantity)}
+        </Text>
+        <Text style={styles.itemUnitPrice}>
+          {formatPrice(item.product.price)} each
+        </Text>
+      </View>
     </View>
   );
 
   const renderPaymentForm = () => (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="#333" />
+        <TouchableOpacity style={styles.backButton} onPress={() => setShowPaymentForm(false)}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Payment Details</Text>
+        <View style={styles.paymentTitleContainer}>
+          <Text style={styles.title}>Payment Details</Text>
+        </View>
         
         <View style={styles.paymentSection}>
           <Text style={styles.sectionTitle}>Card Information</Text>
@@ -231,12 +320,33 @@ export default function CheckoutModal({
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Order Summary</Text>
-        
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Order Summary</Text>
+          <Text style={styles.subtitle}>
+            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your order
+          </Text>
+        </View>
 
         <View style={styles.itemsContainer}>
           {cartItems.map((item, index) => renderCartItem(item, index))}
         </View>
+
+        {/* Promo codes section */}
+        {cafeId && (
+          <View style={styles.promoSection}>
+            <PromoCodesSection
+              cafeId={cafeId}
+              onPromoCodePress={(promoCode) => {
+                console.log('Promo code pressed:', promoCode.title);
+                // Handle promo code press - could show details or apply
+              }}
+              onPromoCodeApply={(promoCode) => {
+                console.log('Promo code apply:', promoCode.title);
+                // Handle promo code application
+              }}
+            />
+          </View>
+        )}
 
         <View style={styles.totalContainer}>
           <View style={styles.totalRow}>
@@ -294,11 +404,24 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   closeButton: {
     width: 40,
@@ -317,11 +440,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
+  titleContainer: {
+    marginBottom: 20,
+  },
+  paymentTitleContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: isTablet ? 28 : 24,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   userInfo: {
     flexDirection: 'row',
@@ -345,34 +480,93 @@ const styles = StyleSheet.create({
   },
   cartItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  itemInfo: {
+  itemImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+    backgroundColor: '#F8F9FA',
+  },
+  itemImage: {
+    width: '100%',
+    height: '100%',
+  },
+  itemImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  itemDetails: {
     flex: 1,
+    marginRight: 12,
   },
   itemName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#1F2937',
     marginBottom: 4,
+    lineHeight: 20,
   },
-  itemQuantity: {
+  itemDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  quantityButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
+  quantityText: {
     fontSize: 14,
-    color: '#666',
+    fontWeight: '600',
+    color: '#374151',
+    marginHorizontal: 12,
+    minWidth: 20,
+    textAlign: 'center',
   },
-  itemCustomizations: {
+  customizationsContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  customizationText: {
     fontSize: 12,
     color: '#9CA3AF',
-    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  itemPriceContainer: {
+    alignItems: 'flex-end',
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  itemUnitPrice: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
   totalContainer: {
     backgroundColor: '#fff',
@@ -419,13 +613,18 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   placeOrderButton: {
-    backgroundColor: '#6B7280',
+    backgroundColor: '#374151',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 25,
+    borderRadius: 12,
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   disabledButton: {
     backgroundColor: '#9CA3AF',
@@ -492,6 +691,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#007AFF',
+  },
+  promoSection: {
+    marginBottom: 16,
   },
 });
 

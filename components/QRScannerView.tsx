@@ -1,30 +1,37 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { getCafesByNetwork } from '../data/demoCafes';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
 interface QRScannerViewProps {
   onCafeScanned: (cafeData: any) => void;
+  onNetworkSearch?: (networkName: string, cafes: any[]) => void;
   onClose?: () => void;
 }
 
 export const QRScannerView: React.FC<QRScannerViewProps> = ({
   onCafeScanned,
+  onNetworkSearch,
   onClose,
 }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -33,38 +40,134 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
   const [flashOn, setFlashOn] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [cafeCode, setCafeCode] = useState('');
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(true);
+  const [isShowingAlert, setIsShowingAlert] = useState(false);
+  const isProcessingRef = useRef(false);
 
   const hasPermission =
     permission?.granted === true ? true : permission ? false : null;
 
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      setIsInputFocused(false);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
   const requestCameraPermission = async () => {
+    try {
     setIsRequestingPermission(true);
-    const res = await requestPermission();
+      setScanError(null);
+      const result = await requestPermission();
+      
+      if (!result.granted) {
+        setScanError('Camera permission is required to scan QR codes');
+      }
+    } catch (error) {
+      console.error('Error requesting camera permission:', error);
+      setScanError('Failed to request camera permission');
+    } finally {
     setIsRequestingPermission(false);
+    }
   };
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
-    if (scanned) return;
+    if (scanned || isShowingAlert || isProcessingRef.current) return;
+    
+    console.log('🔍 QR Code scanned:', { type, data });
+    isProcessingRef.current = true;
     setScanned(true);
+    setScanError(null);
+    setIsShowingAlert(true);
+    
     try {
-      const cafeData = JSON.parse(data);
-      if (!cafeData.cafeId || !cafeData.cafeName) throw new Error('Invalid cafe data');
+      // Validate data
+      if (!data || typeof data !== 'string') {
+        throw new Error('Invalid QR code data');
+      }
+
+      // Try to parse as JSON
+      let cafeData;
+      try {
+        cafeData = JSON.parse(data);
+      } catch {
+        // If not JSON, treat as simple cafe code
+        console.log('🔍 Treating as simple cafe code:', data);
+        const result = handleCafeCodeSubmit(data);
+        if (!result) {
+          // If handleCafeCodeSubmit didn't handle it, show error
+          throw new Error('Invalid cafe code');
+        }
+        return;
+      }
+
+      // Validate cafe data structure
+      if (!cafeData || typeof cafeData !== 'object') {
+        throw new Error('Invalid cafe data structure');
+      }
+
+      if (!cafeData.cafeId || !cafeData.cafeName) {
+        throw new Error('Missing required cafe information');
+      }
+
+      console.log('🔍 Valid cafe data found:', cafeData);
       onCafeScanned(cafeData);
-    } catch {
+      
+    } catch (error) {
+      console.error('🔍 QR scan error:', error);
+      setScanError(error instanceof Error ? error.message : 'Unknown scanning error');
+      
       Alert.alert(
-        'Scanning Error',
-        'QR code does not contain cafe information. Make sure you are scanning the correct code.',
-        [{ text: 'Try Again', onPress: () => setScanned(false) }]
+        'QR Code Not Recognized',
+        'This QR code is not recognized. Please try scanning a valid cafe QR code or enter the cafe name manually.',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => {
+              setScanned(false);
+              setScanError(null);
+              setIsShowingAlert(false);
+              isProcessingRef.current = false;
+            }
+          }
+        ]
       );
     }
   };
 
   const toggleFlash = () => setFlashOn((v) => !v);
 
-  const handleCafeCodeSubmit = () => {
-    if (!cafeCode.trim()) {
-      Alert.alert('Error', 'Please enter cafe code');
-      return;
+  const resetScanning = () => {
+    setScanned(false);
+    setScanError(null);
+    setIsShowingAlert(false);
+    isProcessingRef.current = false;
+  };
+
+  const handleCafeCodeSubmit = (code?: string): boolean => {
+    const inputCode = code || cafeCode;
+    console.log('🔍 handleCafeCodeSubmit called with code:', inputCode);
+    
+    if (isShowingAlert) return false;
+    
+    if (!inputCode.trim()) {
+      setIsShowingAlert(true);
+      Alert.alert('Oops!', 'Please enter the name of your favorite cafe or restaurant', [
+        { text: 'OK', onPress: () => setIsShowingAlert(false) }
+      ]);
+      return false;
     }
 
     // Map cafe codes to demo data
@@ -75,12 +178,6 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         location: 'Moscow, Arbat St. 1',
         apiEndpoint: 'http://localhost:3000/api'
       },
-      'coffee': {
-        cafeId: 'demo_cafe_002',
-        cafeName: 'Coffee House',
-        location: 'St. Petersburg, Nevsky Prospect 50',
-        apiEndpoint: 'http://localhost:3001/api'
-      },
       'brew': {
         cafeId: 'demo_cafe_003',
         cafeName: 'Brew & Bean',
@@ -89,17 +186,49 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       }
     };
 
-    const cafeData = cafeDataMap[cafeCode.toLowerCase()];
+    // Network search codes
+    const networkSearchCodes = ['coffee', 'emrahkeba'];
+
+    const lowerCode = inputCode.toLowerCase();
+    const cafeData = cafeDataMap[lowerCode];
+    console.log('🔍 Looking for code:', lowerCode);
+    console.log('🔍 Available codes:', Object.keys(cafeDataMap));
+    console.log('🔍 Network search codes:', networkSearchCodes);
+    console.log('🔍 Found cafe data:', cafeData);
+    
     if (cafeData) {
+      console.log('🔍 Calling onCafeScanned with:', cafeData);
       onCafeScanned(cafeData);
+      return true;
+    } else if (networkSearchCodes.includes(lowerCode)) {
+      console.log('🔍 Network search triggered for:', lowerCode);
+      const networkName = lowerCode === 'coffee' ? 'Coffee House' : 'Emrahkeba';
+      const cafes = getCafesByNetwork(networkName);
+      console.log('🔍 Found cafes for network:', cafes);
+      
+      if (onNetworkSearch && cafes.length > 0) {
+        onNetworkSearch(networkName, cafes);
+        return true;
+      } else {
+        setIsShowingAlert(true);
+        Alert.alert(
+          'Network Not Found',
+          `We couldn't find any locations for ${networkName} network. Please try a different cafe name.`,
+          [{ text: 'OK', onPress: () => setIsShowingAlert(false) }]
+        );
+        return false;
+      }
     } else {
+      console.log('🔍 Code not found, showing alert');
+      setIsShowingAlert(true);
       Alert.alert(
         'Cafe Not Found',
-        'Available codes:\n• akafe - AKAFE (6 categories)\n• coffee - Coffee House (4 categories)\n• brew - Brew & Bean (4 categories)',
+        'This cafe is not found in our network. Please try a different cafe name.',
         [
-          { text: 'OK' }
+          { text: 'OK', onPress: () => setIsShowingAlert(false) }
         ]
       );
+      return false;
     }
   };
 
@@ -117,22 +246,27 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
           <View style={styles.placeholderButton} />
         </View>
 
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
         {/* Permission Request */}
-        <View style={styles.permissionContainer}>
+          <View style={[styles.permissionContainer, isKeyboardVisible && styles.permissionContainerKeyboard]}>
           <Ionicons name="qr-code" size={isTablet ? 80 : 60} color="#000" />
-          <Text style={styles.permissionTitle}>Ready to Scan</Text>
+          <Text style={styles.permissionTitle}>Ready to Find Your Cafe</Text>
           <Text style={styles.permissionText}>
-            Press the button below to start QR code scanning
+            Scan a QR code or enter your favorite cafe name to discover nearby locations
           </Text>
           <TouchableOpacity 
             style={styles.permissionButton} 
-            onPress={requestCameraPermission}
+            onPress={() => requestCameraPermission()}
             disabled={isRequestingPermission}
           >
             {isRequestingPermission ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.permissionButtonText}>Start Scanning</Text>
+              <Text style={styles.permissionButtonText}>Start Finding Cafes</Text>
             )}
           </TouchableOpacity>
           
@@ -143,29 +277,32 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
             <View style={styles.dividerLine} />
           </View>
           
-          <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
+          <Text style={styles.cafeCodeTitle}>Enter Your Favorite Cafe</Text>
           <Text style={styles.cafeCodeDescription}>
-            Available codes: akafe, coffee, brew
+            Type the name of your favorite cafe or restaurant and we&apos;ll find the nearest locations for you
           </Text>
           
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, isInputFocused && styles.inputContainerFocused]}>
             <TextInput
               style={styles.cafeCodeInput}
               value={cafeCode}
               onChangeText={setCafeCode}
-              placeholder="Example: akafe"
+              placeholder="Try: coffee, emrahkeba, brew..."
               placeholderTextColor="#999"
               autoCapitalize="none"
               autoCorrect={false}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
             />
             <TouchableOpacity 
-              style={styles.submitButton}
-              onPress={handleCafeCodeSubmit}
+              style={[styles.submitButton, isInputFocused && styles.submitButtonFocused]}
+              onPress={() => handleCafeCodeSubmit()}
             >
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -184,15 +321,35 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
           <View style={styles.placeholderButton} />
         </View>
 
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
         {/* Permission Denied */}
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={isTablet ? 80 : 60} color="#000" />
-          <Text style={styles.permissionTitle}>No Camera Access</Text>
+          <View style={[styles.permissionContainer, isKeyboardVisible && styles.permissionContainerKeyboard]}>
+          <Ionicons name="camera-outline" size={isTablet ? 80 : 60} color="#DC2626" />
+          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
           <Text style={styles.permissionText}>
-            Camera permission is required to scan QR codes
+            To scan QR codes, please allow camera access in your device settings
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestCameraPermission}>
-            <Text style={styles.permissionButtonText}>Allow Access</Text>
+          
+          {scanError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{scanError}</Text>
+            </View>
+          )}
+          
+          <TouchableOpacity 
+            style={[styles.permissionButton, isRequestingPermission && styles.permissionButtonDisabled]} 
+            onPress={() => requestCameraPermission()}
+            disabled={isRequestingPermission}
+          >
+            {isRequestingPermission ? (
+              <Text style={styles.permissionButtonText}>Requesting...</Text>
+            ) : (
+              <Text style={styles.permissionButtonText}>Allow Camera Access</Text>
+            )}
           </TouchableOpacity>
           
           {/* Manual Cafe Code Input */}
@@ -202,29 +359,32 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
             <View style={styles.dividerLine} />
           </View>
           
-          <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
+          <Text style={styles.cafeCodeTitle}>Enter Your Favorite Cafe</Text>
           <Text style={styles.cafeCodeDescription}>
-            Available codes: akafe, coffee, brew
+            Type the name of your favorite cafe or restaurant and we&apos;ll find the nearest locations for you
           </Text>
           
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, isInputFocused && styles.inputContainerFocused]}>
             <TextInput
               style={styles.cafeCodeInput}
               value={cafeCode}
               onChangeText={setCafeCode}
-              placeholder="Example: akafe"
+              placeholder="Try: coffee, emrahkeba, brew..."
               placeholderTextColor="#999"
               autoCapitalize="none"
               autoCorrect={false}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
             />
             <TouchableOpacity 
-              style={styles.submitButton}
-              onPress={handleCafeCodeSubmit}
+              style={[styles.submitButton, isInputFocused && styles.submitButtonFocused]}
+              onPress={() => handleCafeCodeSubmit()}
             >
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -238,7 +398,21 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>QR Code Scanning</Text>
+        <Text style={styles.headerTitle}>
+          {showManualInput ? 'Enter Cafe Name' : 'QR Code Scanning'}
+        </Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={[styles.headerButton, !showManualInput && styles.headerButtonActive]} 
+            onPress={() => setShowManualInput(!showManualInput)}
+          >
+            <Ionicons 
+              name="qr-code" 
+              size={isTablet ? 24 : 20} 
+              color={!showManualInput ? "#10B981" : "#000"} 
+            />
+          </TouchableOpacity>
+          {!showManualInput && (
         <TouchableOpacity style={styles.flashButton} onPress={toggleFlash}>
           <Ionicons 
             name={flashOn ? "flash" : "flash-off"} 
@@ -246,15 +420,20 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
             color="#000" 
           />
         </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Camera View */}
+      {!showManualInput && (
       <View style={styles.cameraContainer}>
         <CameraView
           style={styles.camera}
           enableTorch={flashOn}
-          barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'code128'] }}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            barcodeScannerSettings={{ 
+              barcodeTypes: ['qr']
+            }}
+          onBarcodeScanned={scanned || isShowingAlert || isProcessingRef.current ? undefined : handleBarCodeScanned}
         />
         
         {/* Overlay */}
@@ -284,56 +463,95 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
           <View style={styles.overlayBottom} />
         </View>
       </View>
+      )}
 
-      {/* Instructions */}
+      {/* Manual Input View */}
+      {showManualInput && (
+        <KeyboardAvoidingView 
+          style={styles.manualInputContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <View style={styles.manualInputContent}>
+            <View style={styles.manualInputHeader}>
+              <Ionicons name="keypad" size={isTablet ? 60 : 50} color="#10B981" />
+              <Text style={styles.manualInputTitle}>Enter Cafe Name</Text>
+              <Text style={styles.manualInputDescription}>
+                Type the name of your favorite cafe or restaurant and we&apos;ll find the nearest locations for you
+              </Text>
+            </View>
+            
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.inputContainer, isInputFocused && styles.inputContainerFocused]}>
+                <TextInput
+                  style={styles.cafeCodeInput}
+                  value={cafeCode}
+                  onChangeText={setCafeCode}
+                  placeholder="Try: coffee, emrahkeba, brew..."
+                  placeholderTextColor="#999"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  autoFocus={true}
+                  editable={true}
+                  selectTextOnFocus={true}
+                  keyboardType="default"
+                  returnKeyType="search"
+                  onSubmitEditing={() => handleCafeCodeSubmit()}
+                />
+                <TouchableOpacity 
+                  style={[styles.submitButton, isInputFocused && styles.submitButtonFocused]}
+                  onPress={() => handleCafeCodeSubmit()}
+                >
+                  <Ionicons name="arrow-forward" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+            
+            
+            {/* Switch to QR Scanner */}
+            <TouchableOpacity 
+              style={styles.switchToQRButton} 
+              onPress={() => setShowManualInput(false)}
+            >
+              <Ionicons name="qr-code" size={20} color="#fff" />
+              <Text style={styles.switchToQRText}>Or scan QR code</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
+
+      {/* Instructions - Only show when camera is active */}
+      {!showManualInput && (
       <View style={styles.instructionsContainer}>
         <Text style={styles.instructionsTitle}>
           Point camera at cafe QR code
         </Text>
         <Text style={styles.instructionsText}>
-          QR code must contain cafe information to access the menu
+            Scan any cafe QR code to instantly access their menu and find nearby locations
         </Text>
         
         {scanned && (
           <TouchableOpacity 
             style={styles.rescanButton} 
-            onPress={() => setScanned(false)}
+              onPress={resetScanning}
           >
             <Ionicons name="refresh" size={20} color="#333" />
             <Text style={styles.rescanButtonText}>Scan Again</Text>
           </TouchableOpacity>
         )}
         
-        {/* Manual Cafe Code Input */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-        
-        <Text style={styles.cafeCodeTitle}>Enter Cafe Code</Text>
-        <Text style={styles.cafeCodeDescription}>
-          Available codes: akafe (6), coffee (4), brew (4)
-        </Text>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.cafeCodeInput}
-            value={cafeCode}
-            onChangeText={setCafeCode}
-            placeholder="Example: akafe"
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {/* Quick switch to manual input */}
           <TouchableOpacity 
-            style={styles.submitButton}
-            onPress={handleCafeCodeSubmit}
+            style={styles.switchToManualButton} 
+            onPress={() => setShowManualInput(true)}
           >
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Ionicons name="keypad" size={20} color="#10B981" />
+            <Text style={styles.switchToManualText}>Or enter cafe name manually</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -343,12 +561,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 40,
+  },
+  permissionContainerKeyboard: {
+    justifyContent: 'flex-start',
+    paddingTop: 40,
   },
   permissionTitle: {
     fontSize: isTablet ? 24 : 20,
@@ -378,6 +603,24 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 16 : 14,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  permissionButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.7,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: isTablet ? 14 : 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',
@@ -413,6 +656,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     maxWidth: 300,
+    pointerEvents: 'box-none',
+  },
+  inputContainerFocused: {
+    transform: [{ scale: 1.02 }],
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   cafeCodeInput: {
     flex: 1,
@@ -425,6 +677,8 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 16 : 14,
     color: '#000',
     marginRight: 10,
+    minHeight: 50,
+    textAlignVertical: 'center',
   },
   submitButton: {
     width: 50,
@@ -434,6 +688,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  submitButtonFocused: {
+    backgroundColor: '#10B981',
+    transform: [{ scale: 1.1 }],
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -441,6 +704,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#fff',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerButton: {
+    width: isTablet ? 44 : 40,
+    height: isTablet ? 44 : 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerButtonActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 2,
+    borderColor: '#10B981',
   },
   closeButton: {
     width: isTablet ? 44 : 40,
@@ -577,6 +858,66 @@ const styles = StyleSheet.create({
   },
   rescanButtonText: {
     color: '#333',
+    fontSize: isTablet ? 14 : 12,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  manualInputContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  manualInputContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  manualInputHeader: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  manualInputTitle: {
+    fontSize: isTablet ? 24 : 20,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  manualInputDescription: {
+    fontSize: isTablet ? 16 : 14,
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  switchToManualButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  switchToManualText: {
+    color: '#10B981',
+    fontSize: isTablet ? 14 : 12,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  switchToQRButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 30,
+  },
+  switchToQRText: {
+    color: '#fff',
     fontSize: isTablet ? 14 : 12,
     fontWeight: '500',
     marginLeft: 8,

@@ -75,14 +75,7 @@ export interface AddOn {
   price: number;
 }
 
-export type ProductCategory = 
-  | 'for-you'
-  | 'new'
-  | 'milk-coffee'
-  | 'iced-drinks'
-  | 'hot-drinks'
-  | 'desserts'
-  | 'food';
+export type ProductCategory = string; // Dynamic categories from API
 
 // API Response types
 export interface ProductsResponse {

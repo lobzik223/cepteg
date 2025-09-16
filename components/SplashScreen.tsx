@@ -3,10 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
 import { Cafe } from '../services/CafeService';
 import { dataPreloadService, PreloadProgress } from '../services/DataPreloadService';
@@ -52,8 +52,9 @@ export default function SplashScreen({ onFinish, cafe }: SplashScreenProps) {
           setPreloadedData(result.data);
         }
       } else {
-        // Preload demo data
-        const result = await dataPreloadService.preloadDemoData('demo_cafe_001', (progress) => {
+        // Preload demo data for the selected cafe
+        const cafeId = cafe?.id || 'demo_cafe_002';
+        const result = await dataPreloadService.preloadDemoData(cafeId, (progress) => {
           setLoadingProgress(progress);
           progressOpacity.value = withTiming(1.0, { duration: 300 });
         });
@@ -95,14 +96,28 @@ export default function SplashScreen({ onFinish, cafe }: SplashScreenProps) {
       style={styles.container}
     >
       <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-        <Ionicons 
-          name="cafe" 
-          size={isTablet ? 100 : 80} 
-          color="white" 
-          style={styles.logoShadow}
-        />
+        {cafe?.logoUrl ? (
+          <View style={styles.logoImageContainer}>
+            <Ionicons 
+              name="cafe" 
+              size={isTablet ? 100 : 80} 
+              color="white" 
+              style={styles.logoShadow}
+            />
+          </View>
+        ) : (
+          <Ionicons 
+            name="cafe" 
+            size={isTablet ? 100 : 80} 
+            color="white" 
+            style={styles.logoShadow}
+          />
+        )}
         {cafe?.name && (
           <Text style={styles.cafeName}>{cafe.name}</Text>
+        )}
+        {cafe?.location && (
+          <Text style={styles.cafeLocation}>{cafe.location}</Text>
         )}
       </Animated.View>
 
@@ -165,6 +180,20 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  cafeLocation: {
+    fontSize: isTablet ? 16 : 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  logoImageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressContainer: {
     position: 'absolute',
