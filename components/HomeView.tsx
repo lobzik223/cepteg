@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -54,6 +54,10 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   console.log('HomeView render - currentOrder:', currentOrder);
   const [isCheckoutModalVisible, setIsCheckoutModalVisible] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  
+  // Ref для ScrollView и раздела "Мой заказ"
+  const scrollViewRef = useRef<ScrollView>(null);
+  const myOrderSectionRef = useRef<View>(null);
 
   // Category mapping for display and API
   // Dynamic category display names - can be extended from API
@@ -210,11 +214,49 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   const handleOrderSuccess = () => {
     console.log('handleOrderSuccess called, cartItems:', cartItems);
     // Сохраняем заказ перед очисткой корзины
-    setCurrentOrder([...cartItems]);
-    console.log('currentOrder set to:', [...cartItems]);
+    const orderItems = [...cartItems];
+    setCurrentOrder(orderItems);
+    console.log('currentOrder set to:', orderItems);
     setCartItems([]);
     setCartTotal(0);
     setIsCheckoutModalVisible(false);
+    
+    // Автоматический скролл после небольшой задержки
+    setTimeout(() => {
+      if (orderItems.length > 0) {
+        // Если есть заказ - скроллим к разделу "Мой заказ"
+        try {
+          myOrderSectionRef.current?.measureLayout(
+            scrollViewRef.current as any,
+            (x, y) => {
+              scrollViewRef.current?.scrollTo({
+                y: Math.max(0, y - 50), // Небольшой отступ сверху, но не меньше 0
+                animated: true,
+              });
+            },
+            () => {
+              // Fallback если measureLayout не работает
+              scrollViewRef.current?.scrollTo({
+                y: 400,
+                animated: true,
+              });
+            }
+          );
+        } catch {
+          // Дополнительный fallback
+          scrollViewRef.current?.scrollTo({
+            y: 400,
+            animated: true,
+          });
+        }
+      } else {
+        // Если нет заказа - скроллим наверх
+        scrollViewRef.current?.scrollTo({
+          y: 0,
+          animated: true,
+        });
+      }
+    }, 500);
   };
 
 
@@ -326,7 +368,7 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Video background with overlay elements */}
         <View style={styles.videoContainer}>
           <CafeVideoView cafe={cafe || null} />
@@ -364,11 +406,15 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
 
         {/* My Order section */}
         {currentOrder.length > 0 && (
-          <MyOrderSection
-            orderItems={currentOrder}
-            orderNumber="#12345"
-            orderStatus="accepted"
-          />
+          <View ref={myOrderSectionRef}>
+            <MyOrderSection
+              orderItems={currentOrder}
+              orderNumber="#12345"
+              orderStatus="accepted"
+              cafeName={cafe?.name || 'Cafe'}
+              cafeAddress={cafe?.location || 'Address not specified'}
+            />
+          </View>
         )}
 
         {/* Promo codes section */}
@@ -435,21 +481,27 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                 </TouchableOpacity>
               </View>
             ) : finalCategoryProducts.length > 0 ? (
-              <View style={styles.drinksGrid}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.drinksHorizontalScroll}
+                contentContainerStyle={styles.drinksScrollContent}
+              >
                 {finalCategoryProducts.map((drink: Product) => (
-                  <DrinkCard 
-                    key={drink.id} 
-                    id={drink.id}
-                    name={drink.name}
-                    price={formatPrice(drink.price)}
-                    badge={drink.badge?.text || null}
-                    badgePosition={drink.badge?.position || 'none'}
-                    imageUrl={drink.imageUrl}
-                    onPress={() => handleProductPress(drink)}
-                    onAddToCart={() => addToCart(drink)}
-                  />
+                  <View key={drink.id} style={styles.drinkCardContainer}>
+                    <DrinkCard 
+                      id={drink.id}
+                      name={drink.name}
+                      price={formatPrice(drink.price)}
+                      badge={drink.badge?.text || null}
+                      badgePosition={drink.badge?.position || 'none'}
+                      imageUrl={drink.imageUrl}
+                      onPress={() => handleProductPress(drink)}
+                      onAddToCart={() => addToCart(drink)}
+                    />
+                  </View>
                 ))}
-              </View>
+              </ScrollView>
             ) : (
               <View style={styles.emptyStateContainer}>
                 <Ionicons name="cafe-outline" size={isTablet ? 80 : 60} color="#9CA3AF" />
@@ -477,21 +529,27 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                 </TouchableOpacity>
               </View>
             ) : finalNewProducts.length > 0 ? (
-              <View style={styles.drinksGrid}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.drinksHorizontalScroll}
+                contentContainerStyle={styles.drinksScrollContent}
+              >
                 {finalNewProducts.map((drink: Product) => (
-                  <DrinkCard 
-                    key={drink.id} 
-                    id={drink.id}
-                    name={drink.name}
-                    price={formatPrice(drink.price)}
-                    badge={drink.badge?.text || null}
-                    badgePosition={drink.badge?.position || 'none'}
-                    imageUrl={drink.imageUrl}
-                    onPress={() => handleProductPress(drink)}
-                    onAddToCart={() => addToCart(drink)}
-                  />
+                  <View key={drink.id} style={styles.drinkCardContainer}>
+                    <DrinkCard 
+                      id={drink.id}
+                      name={drink.name}
+                      price={formatPrice(drink.price)}
+                      badge={drink.badge?.text || null}
+                      badgePosition={drink.badge?.position || 'none'}
+                      imageUrl={drink.imageUrl}
+                      onPress={() => handleProductPress(drink)}
+                      onAddToCart={() => addToCart(drink)}
+                    />
+                  </View>
                 ))}
-              </View>
+              </ScrollView>
             ) : (
               <View style={styles.emptyStateContainer}>
                 <Ionicons name="sparkles-outline" size={isTablet ? 80 : 60} color="#9CA3AF" />
@@ -688,9 +746,9 @@ const styles = StyleSheet.create({
       : isSmallScreen ? 500 : isLargeScreen ? 650 : 600,
     position: 'relative',
     marginHorizontal: isTablet ? -100 : -16,
-    marginTop: isTablet ? -160 : -100,
-    width: isTablet ? width + 1200 : width + 700, // Увеличиваем ширину для покрытия
-    marginLeft: isTablet ? -250 : -100, // Сдвигаем видео чуть левее
+    marginTop: isTablet ? -40 : -40,
+    width: isTablet ? width + 1000 : width + 600, 
+    marginLeft: isTablet ? -25 : 0, 
     overflow: 'hidden',
     borderRadius: isTablet ? 32 : 16,
     shadowColor: '#000',
@@ -716,7 +774,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: isTablet ? 70 : 20,
-    paddingTop: isTablet ? 25 : 20, // Поднимаем информацию о кафе еще выше
+    paddingTop: isTablet ? 25 : 20, 
     paddingBottom: 20,
   },
   logoContainer: {
@@ -833,11 +891,15 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: isTablet ? 24 : 16,
   },
-  drinksGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: isTablet ? 'flex-start' : 'space-between',
+  drinksHorizontalScroll: {
+    marginHorizontal: isTablet ? -40 : -16, 
+  },
+  drinksScrollContent: {
+    paddingHorizontal: isTablet ? 40 : 16,
     gap: isTablet ? 20 : 16,
+  },
+  drinkCardContainer: {
+    width: isTablet ? 220 : 180, 
   },
   loadingContainer: {
     alignItems: 'center',

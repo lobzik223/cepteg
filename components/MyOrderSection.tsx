@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dimensions,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from 'react-native';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
+import { OrderDetailModal } from './OrderDetailModal';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -24,14 +25,20 @@ interface MyOrderSectionProps {
   onClose?: () => void;
   orderNumber?: string;
   orderStatus?: 'accepted' | 'preparing' | 'ready' | 'completed';
+  cafeName?: string;
+  cafeAddress?: string;
 }
 
 export const MyOrderSection: React.FC<MyOrderSectionProps> = ({
   orderItems,
   onClose,
   orderNumber = '#12345',
-  orderStatus = 'accepted'
+  orderStatus = 'accepted',
+  cafeName = 'Cafe',
+  cafeAddress = 'Address not specified'
 }) => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  
   console.log('MyOrderSection rendered with orderItems:', orderItems);
   
   if (!orderItems || orderItems.length === 0) {
@@ -80,28 +87,36 @@ export const MyOrderSection: React.FC<MyOrderSectionProps> = ({
   const statusText = getStatusText();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Ionicons name="receipt-outline" size={20} color="#374151" />
-          <Text style={styles.title}>My Order</Text>
+    <>
+      <TouchableOpacity 
+        style={styles.container}
+        onPress={() => setIsModalVisible(true)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Ionicons name="receipt-outline" size={20} color="#374151" />
+            <Text style={styles.title}>My Order</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
         </View>
-      </View>
 
       <View style={styles.content}>
         {/* Progress Circle and Order Info */}
         <View style={styles.progressSection}>
           <View style={styles.progressContainer}>
-            <LinearGradient
-              colors={[statusColor, statusColor + '80']}
-              style={styles.progressCircle}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+            <View style={styles.progressCircle}>
+              {/* Background circle */}
+              <View style={styles.progressBackground} />
+              {/* Progress fill */}
+              <View style={[styles.progressFill, { 
+                backgroundColor: progress > 0 ? statusColor : 'transparent',
+                width: `${progress}%`
+              }]} />
               <View style={styles.progressInner}>
                 <Text style={styles.progressPercentage}>{progress}%</Text>
               </View>
-            </LinearGradient>
+            </View>
           </View>
           
           <View style={styles.orderInfo}>
@@ -142,7 +157,21 @@ export const MyOrderSection: React.FC<MyOrderSectionProps> = ({
           <Text style={styles.totalAmount}>{formatPrice(calculateTotal())}</Text>
         </View>
       </View>
-    </View>
+      </TouchableOpacity>
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        orderItems={orderItems}
+        orderNumber={orderNumber}
+        orderStatus={orderStatus}
+        cafeName={cafeName}
+        cafeAddress={cafeAddress}
+        paymentMethod="Credit Card"
+        orderDate={new Date().toLocaleDateString()}
+      />
+    </>
   );
 };
 
@@ -160,7 +189,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: isTablet ? 20 : 16,
     paddingTop: isTablet ? 16 : 12,
@@ -201,6 +230,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  progressBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    borderRadius: 35,
+    backgroundColor: '#E5E7EB', // Серый фон
+  },
+  progressFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    borderRadius: 35,
+    backgroundColor: '#10B981', // Зеленый цвет по умолчанию
   },
   progressInner: {
     width: 50,
