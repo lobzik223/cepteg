@@ -1,43 +1,41 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, ReactNode, useContext, useState } from 'react';
 
-export type Role =
-  | "CEPEG_ADMIN"
-  | "RESTAURANT_OWNER"
-  | "RESTAURANT_MANAGER"
-  | "KITCHEN_STAFF"
-  | "WAITER_STAFF"
-  | "CASHIER_STAFF";
-
-export type Session = {
+export type AuthUser = {
   token: string;
-  role: Role;
+  role: 'CEPEG_ADMIN' | 'RESTAURANT_OWNER' | 'RESTAURANT_MANAGER';
   tenantId?: number | null;
   branchId?: number | null;
-} | null;
+};
 
-type Ctx = {
-  session: Session;
-  login: (s: Session) => void;
+type AuthContextType = {
+  user: AuthUser | null;
+  login: (user: AuthUser) => void;
   logout: () => void;
 };
 
-const AuthContext = createContext<Ctx>({
-  session: null,
+// 🚀 Varsayılan değerler
+const AuthContext = createContext<AuthContextType>({
+  user: null,
   login: () => {},
   logout: () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session>(null);
-  const value = useMemo(
-    () => ({
-      session,
-      login: (s: Session) => setSession(s),
-      logout: () => setSession(null),
-    }),
-    [session]
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  const login = (u: AuthUser) => {
+  console.log('AuthProvider.login called with', u);
+  setUser(u);
+};
+  const logout = () => setUser(null);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

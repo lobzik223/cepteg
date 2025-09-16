@@ -28,6 +28,13 @@ export default function Tables() {
   const [modalOpen, setModalOpen] = useState(false);
   const [qrModal, setQrModal] = useState<Table | null>(null);
 
+  // Toplu ekleme modal state'leri
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkPrefix, setBulkPrefix] = useState('Masa');
+  const [bulkStartIndex, setBulkStartIndex] = useState('1');
+  const [bulkCount, setBulkCount] = useState('5');
+  const [bulkCapacity, setBulkCapacity] = useState('4');
+
   const [editing, setEditing] = useState<Table | null>(null);
   const [name, setName] = useState('');
   const [capacity, setCapacity] = useState('');
@@ -43,6 +50,10 @@ export default function Tables() {
     setName('');
     setCapacity('');
     setModalOpen(true);
+  };
+
+  const openBulk = () => {
+    setBulkModalOpen(true);
   };
 
   const openEdit = (t: Table) => {
@@ -72,15 +83,41 @@ export default function Tables() {
   const deleteTable = (id: number) =>
     setTables(prev => prev.filter(t => t.id !== id));
 
+  const saveBulkAdd = () => {
+    const start = Number(bulkStartIndex);
+    const count = Number(bulkCount);
+    const cap = Number(bulkCapacity);
+    const prefix = bulkPrefix.trim() || 'Masa';
+
+    if (!Number.isFinite(start) || start < 1) return;
+    if (!Number.isFinite(count) || count < 1) return;
+    if (!Number.isFinite(cap) || cap < 1) return;
+
+    const now = Date.now();
+    const newOnes: Table[] = Array.from({ length: count }, (_, idx) => {
+      const num = start + idx;
+      return { id: now + idx, name: `${prefix} ${num}` , capacity: cap };
+    });
+
+    setTables(prev => [...prev, ...newOnes]);
+    setBulkModalOpen(false);
+  };
+
   return (
     <View style={s.screen}>
       {/* Başlık + ekleme butonu */}
       <View style={s.headerRow}>
         <Text style={s.title}>Masalar</Text>
-        <TouchableOpacity style={s.primaryBtn} onPress={openAdd}>
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={s.primaryBtnText}>Yeni Masa</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity style={s.secondaryBtn} onPress={openBulk}>
+            <Ionicons name="copy-outline" size={18} color="#111" />
+            <Text style={s.secondaryBtnText}>Toplu Ekle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.primaryBtn} onPress={openAdd}>
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={s.primaryBtnText}>Yeni Masa</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Arama */}
@@ -186,6 +223,68 @@ export default function Tables() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal: Toplu Ekle */}
+      <Modal visible={bulkModalOpen} transparent animationType="fade" onRequestClose={() => setBulkModalOpen(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={s.modalBox}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Toplu Masa Ekle</Text>
+              <TouchableOpacity onPress={() => setBulkModalOpen(false)}>
+                <Ionicons name="close" size={22} color="#111" />
+              </TouchableOpacity>
+            </View>
+            <View style={s.modalBody}>
+              <Text style={s.label}>Ad ön eki</Text>
+              <TextInput
+                style={s.textField}
+                value={bulkPrefix}
+                onChangeText={setBulkPrefix}
+                placeholder="Örn. Masa"
+                placeholderTextColor="#9aa1aa"
+              />
+
+              <Text style={s.label}>Başlangıç numarası</Text>
+              <TextInput
+                style={s.textField}
+                value={bulkStartIndex}
+                onChangeText={setBulkStartIndex}
+                keyboardType="numeric"
+                placeholder="Örn. 1"
+                placeholderTextColor="#9aa1aa"
+              />
+
+              <Text style={s.label}>Adet</Text>
+              <TextInput
+                style={s.textField}
+                value={bulkCount}
+                onChangeText={setBulkCount}
+                keyboardType="numeric"
+                placeholder="Örn. 10"
+                placeholderTextColor="#9aa1aa"
+              />
+
+              <Text style={s.label}>Kapasite (kişi)</Text>
+              <TextInput
+                style={s.textField}
+                value={bulkCapacity}
+                onChangeText={setBulkCapacity}
+                keyboardType="numeric"
+                placeholder="Örn. 4"
+                placeholderTextColor="#9aa1aa"
+              />
+            </View>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setBulkModalOpen(false)}>
+                <Text style={s.btnGhostText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.btn, s.btnPrimary]} onPress={saveBulkAdd}>
+                <Text style={s.btnPrimaryText}>Ekle</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -206,6 +305,8 @@ const s = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '800', color: '#111' },
   primaryBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#111', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   primaryBtnText: { color: '#fff', fontWeight: '700' },
+  secondaryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f3f4f6', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb' },
+  secondaryBtnText: { color: '#111', fontWeight: '700' },
 
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 12 },
   input: { flex: 1, color: '#111' },
