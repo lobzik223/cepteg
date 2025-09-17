@@ -3,13 +3,13 @@ import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Cafe, cafeService } from '../services/CafeService';
 import { cafeStorageService, TenantData } from '../services/CafeStorageService';
@@ -212,12 +212,10 @@ export const CafeApp: React.FC = () => {
   };
 
   const handleSplashComplete = () => {
-    console.log('🎬 SplashScreen completed, transitioning to HomeView');
     setAppState('home');
   };
 
   const handleNetworkSearch = (networkName: string, cafes: Cafe[]) => {
-    console.log('🔍 Network search triggered:', networkName, cafes);
     setSearchData({ networkName, cafes });
     setAppState('search');
   };

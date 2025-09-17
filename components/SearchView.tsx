@@ -12,6 +12,7 @@ import {
     View
 } from 'react-native';
 import { Cafe } from '../services/CafeService';
+import VideoBackground from './VideoBackground';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -120,9 +121,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
       </View>
 
       {/* Network Info */}
-      <View style={styles.networkInfo}>
+      <VideoBackground
+        videoSource={require('../assets/videoforlocation.mp4')}
+        style={styles.networkInfo}
+        fallbackColors={['#F8FAFC', '#E5E7EB']}
+      >
         <View style={styles.networkIcon}>
-          <Ionicons name="business" size={isTablet ? 40 : 32} color="#8B5CF6" />
+          <Ionicons name="business" size={isTablet ? 40 : 32} color="#FFFFFF" />
         </View>
         <View style={styles.networkDetails}>
           <Text style={styles.networkName}>{networkName}</Text>
@@ -130,7 +135,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             {filteredCafes.length} of {cafes.length} location{cafes.length !== 1 ? 's' : ''} available
           </Text>
         </View>
-      </View>
+      </VideoBackground>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -241,9 +246,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    minHeight: 100,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -278,10 +283,12 @@ const styles = StyleSheet.create({
     width: isTablet ? 60 : 50,
     height: isTablet ? 60 : 50,
     borderRadius: isTablet ? 30 : 25,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   networkDetails: {
     flex: 1,
@@ -289,12 +296,19 @@ const styles = StyleSheet.create({
   networkName: {
     fontSize: isTablet ? 20 : 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#FFFFFF',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   networkStats: {
     fontSize: isTablet ? 14 : 12,
-    color: '#6B7280',
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   listContainer: {
     flex: 1,

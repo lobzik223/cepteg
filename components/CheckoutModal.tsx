@@ -16,7 +16,7 @@ import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
 import { PromoCodesSection } from './PromoCodesSection';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
 interface CartItem {
@@ -26,13 +26,13 @@ interface CartItem {
 }
 
 interface CheckoutModalProps {
-  visible: boolean;
-  onClose: () => void;
-  cartItems: CartItem[];
-  onOrderSuccess: () => void;
-  onUpdateQuantity?: (productId: string, quantity: number) => void;
-  onRemoveItem?: (productId: string) => void;
-  cafeId?: string;
+  readonly visible: boolean;
+  readonly onClose: () => void;
+  readonly cartItems: CartItem[];
+  readonly onOrderSuccess: () => void;
+  readonly onUpdateQuantity?: (productId: string, quantity: number) => void;
+  readonly onRemoveItem?: (productId: string) => void;
+  readonly cafeId?: string;
 }
 
 export default function CheckoutModal({ 
@@ -75,11 +75,9 @@ export default function CheckoutModal({
       if (item) {
         if (item.quantity > 1) {
           onUpdateQuantity(productId, item.quantity - 1);
-        } else {
+        } else if (onRemoveItem) {
           // Remove item if quantity becomes 0
-          if (onRemoveItem) {
-            onRemoveItem(productId);
-          }
+          onRemoveItem(productId);
         }
       }
     }
@@ -212,38 +210,41 @@ export default function CheckoutModal({
 
   const renderPaymentForm = () => (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.paymentHeader}>
         <TouchableOpacity style={styles.backButton} onPress={() => setShowPaymentForm(false)}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
+        <Text style={styles.paymentHeaderTitle}>Payment Details</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.paymentTitleContainer}>
-          <Text style={styles.title}>Payment Details</Text>
-        </View>
-        
         <View style={styles.paymentSection}>
           <Text style={styles.sectionTitle}>Card Information</Text>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Card Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1234 5678 9012 3456"
-              value={cardNumber}
-              onChangeText={(text) => setCardNumber(formatCardNumber(text))}
-              keyboardType="numeric"
-              maxLength={19}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="1234 5678 9012 3456"
+                placeholderTextColor="#9CA3AF"
+                value={cardNumber}
+                onChangeText={(text) => setCardNumber(formatCardNumber(text))}
+                keyboardType="numeric"
+                maxLength={19}
+              />
+              <Ionicons name="card-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            </View>
           </View>
 
           <View style={styles.row}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.inputLabel}>Expiry Date</Text>
               <TextInput
-                style={styles.input}
+                style={styles.paymentInput}
                 placeholder="MM/YY"
+                placeholderTextColor="#9CA3AF"
                 value={expiryDate}
                 onChangeText={(text) => setExpiryDate(formatExpiryDate(text))}
                 keyboardType="numeric"
@@ -251,11 +252,12 @@ export default function CheckoutModal({
               />
             </View>
             
-            <View style={[styles.inputContainer, { flex: 1, marginLeft: 10 }]}>
+            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
               <Text style={styles.inputLabel}>CVV</Text>
               <TextInput
-                style={styles.input}
+                style={styles.paymentInput}
                 placeholder="123"
+                placeholderTextColor="#9CA3AF"
                 value={cvv}
                 onChangeText={setCvv}
                 keyboardType="numeric"
@@ -267,31 +269,41 @@ export default function CheckoutModal({
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Cardholder Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="John Doe"
-              value={cardholderName}
-              onChangeText={setCardholderName}
-              autoCapitalize="words"
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="John Doe"
+                placeholderTextColor="#9CA3AF"
+                value={cardholderName}
+                onChangeText={setCardholderName}
+                autoCapitalize="words"
+              />
+              <Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="john@example.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="john@example.com"
+                placeholderTextColor="#9CA3AF"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            </View>
           </View>
         </View>
 
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Total Amount</Text>
-          <Text style={styles.totalAmount}>{formatPrice(calculateTotal())}</Text>
+        <View style={styles.paymentTotalContainer}>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total Amount</Text>
+            <Text style={styles.totalAmount}>{formatPrice(calculateTotal())}</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -384,16 +396,14 @@ export default function CheckoutModal({
   );
 
   return (
-    <>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={onClose}
-      >
-        {showPaymentForm ? renderPaymentForm() : renderCheckoutContent()}
-      </Modal>
-    </>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      {showPaymentForm ? renderPaymentForm() : renderCheckoutContent()}
+    </Modal>
   );
 }
 
@@ -675,12 +685,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   payButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#374151',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 20,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   payButtonText: {
     color: '#fff',
@@ -690,10 +705,58 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#374151',
   },
   promoSection: {
     marginBottom: 16,
+  },
+  // Payment form specific styles
+  paymentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: '#FAFAFA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  paymentHeaderTitle: {
+    fontSize: isTablet ? 20 : 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  paymentInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    paddingVertical: 12,
+    fontWeight: '500',
+  },
+  inputIcon: {
+    marginLeft: 8,
+  },
+  paymentTotalContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 });
 

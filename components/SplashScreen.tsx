@@ -92,7 +92,7 @@ export default function SplashScreen({ onFinish, cafe }: SplashScreenProps) {
 
   return (
     <LinearGradient
-      colors={['#B3CCF5', '#e6f0ffff']} // Milky blue gradient
+      colors={['#059669', '#10B981', '#34D399']} // Deep green to bright green gradient
       style={styles.container}
     >
       <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>

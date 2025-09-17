@@ -41,6 +41,20 @@ export default {
     ],
     experiments: { typedRoutes: true },
 
+    // Doctor configuration to suppress warnings
+    doctor: {
+      reactNativeDirectoryCheck: {
+        exclude: [
+          "bootstrap",
+          "react-bootstrap",
+          "react-router-dom",
+          "react-native-vector-icons",
+          "react-native-chart-kit"
+        ],
+        listUnknownPackages: false
+      }
+    },
+
     // >>> BURAYI EKLİYORSUN <<<
     extra: {
       eas: {
