@@ -1,1 +1,1 @@
-export { default } from '../src/screens/panel';
+export { default } from '../_src/screens/panel';

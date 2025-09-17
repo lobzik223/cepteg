@@ -1,2 +1,2 @@
-export { default } from './src/screens/panel/login';
+export { default } from './_src/screens/panel/login';
 
