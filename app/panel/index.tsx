@@ -1,92 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { Redirect, router } from 'expo-router';
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../_src/context/AuthContext';
 
-import Categories from './Categories';
-import Dashboard from './Dashboard';
-import Orders from './Orders';
-import Products from './Products';
-import Tables from './Tables';
-import Users from './Users';
-import Cafes from './cafes';
 
 const Drawer = createDrawerNavigator();
 
 export default function Panel() {
   const { user,ready } = useAuth();
-   const [drawerOpen, setDrawerOpen] = useState(true);
   console.log('user',user)
 
-  const menuItems = [
-     { name: 'Dashboard', icon: 'grid-outline', component: Dashboard },
-     { name: 'Categories', icon: 'list-outline', component: Categories },
-     { name: 'Products', icon: 'pricetag-outline', component: Products },
-     { name: 'Tables', icon: 'restaurant-outline', component: Tables },
-     { name: 'Orders', icon: 'cart-outline', component: Orders },
-     { name: 'Users', icon: 'people-outline', component: Users },
-     { name: 'Cafes', icon: 'cafe-outline', component: Cafes, roles: ['CEPEG_ADMIN'] },
-   ];
 
   const normalizedRole = (user?.role ?? 'GUEST').trim().toUpperCase();
-const filteredMenuItems = menuItems.filter(it =>
-    !it.roles || it.roles.some(r => r.trim().toUpperCase() === normalizedRole)
-  );
-
-  // ✅ Her koşulda var olan bir başlangıç ekranı seç (Dashboard varsa onu, yoksa ilkini)
-  const initialRouteName =
-    filteredMenuItems.find(it => it.name === 'Dashboard')?.name ??
-    filteredMenuItems[0]?.name ??
-    'Dashboard';
 
   // role değişince Drawer yeniden mount olsun (guest -> CEPEG_ADMIN)
- const drawerKey = ready ? `drawer-${normalizedRole || 'guest'}` : 'drawer-loading';
 
   // Auth guard: kullanıcı yoksa deklaratif yönlendirme
   if (!user) {
     return <Redirect href="/login" />;
   }
 
-  return (
-    <SafeAreaView style={s.wrapper}>
-      <Drawer.Navigator initialRouteName={initialRouteName}
-        key={drawerKey}
-        screenOptions={{
-          headerStyle: { backgroundColor: '#fff' },
-          headerTintColor: '#111',
-          drawerType: 'permanent',
-          drawerStyle: {
-            width: drawerOpen ? 240 : 72,
-            backgroundColor: '#fff',
-          },
-          headerLeft: () => null,
-        }}
-        drawerContent={(props) => (
-          <CustomDrawerContent
-            {...props}
-            menuItems={filteredMenuItems}
-            drawerOpen={drawerOpen}
-            setDrawerOpen={setDrawerOpen}
-          />
-        )}
-      >
-        {filteredMenuItems.map((item) => (
-          <Drawer.Screen
-            key={item.name}
-            name={item.name}
-            component={item.component}
-            options={{
-              drawerIcon: ({ color, size }) => (
-                <Ionicons name={item.icon as any} size={size} color={color} />
-              ),
-            }}
-          />
-        ))}
-      </Drawer.Navigator>
-    </SafeAreaView>
-  );
 }
 
 /** --- Özel Drawer --- */
