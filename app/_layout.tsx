@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { AuthProvider } from './_src/context/AuthContext'; // ⬅️ İçe aktar
+import { AuthProvider } from '../_src/context/AuthContext'; // ⬅️ İçe aktar
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
