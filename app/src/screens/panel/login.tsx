@@ -61,12 +61,14 @@ export default function Login() {
       return;
     }
 
-    // ✅ AuthContext'e login kaydı
+    // ✅ AuthContext'e login kaydı (token + expiry oluşturulur)
+    const ttlMinutes = 30; // demo için 30 dk
+    const tokenExpiresAt = Date.now() + ttlMinutes * 60 * 1000;
     login({
-      token: 'dummy-token',
       role: user.role,
       tenantId: user.tenantId ?? null,
       branchId: user.branchId ?? null,
+      tokenExpiresAt,
     });
 
     // ✅ Rol bazlı yönlendirme
