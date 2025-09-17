@@ -1,57 +1,76 @@
 import { ResizeMode, Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
-export default function VideoBackground() {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
+interface VideoBackgroundProps {
+  readonly videoSource: any;
+  readonly children?: React.ReactNode;
+  readonly style?: any;
+  readonly fallbackColors?: string[];
+}
+
+export default function VideoBackground({ 
+  videoSource, 
+  children, 
+  style,
+  fallbackColors = ['#F8FAFC', '#E5E7EB']
+}: VideoBackgroundProps) {
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const videoRef = useRef<Video>(null);
+
+  const handleVideoLoad = () => {
+    setIsVideoLoaded(true);
+    setHasError(false);
+  };
+
+  const handleVideoError = (error: any) => {
+    console.warn('Video failed to load:', error);
+    setHasError(true);
+    setIsVideoLoaded(false);
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Beautiful background - always show */}
-      <LinearGradient
-        colors={['#E8F4FD', '#D1E7DD', '#C3E9C0']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.backgroundGradient}
-      >
-        {/* Decorative elements */}
-        <View style={styles.coffeeElements}>
-          <View style={[styles.coffeeBean, { top: 100, left: 50 }]} />
-          <View style={[styles.coffeeBean, { top: 200, right: 60 }]} />
-          <View style={[styles.coffeeBean, { top: 300, left: 80 }]} />
-          <View style={[styles.coffeeBean, { top: 400, right: 40 }]} />
-          
-          {/* Central cup */}
-          <View style={styles.centerCoffee}>
-            <View style={styles.coffeeHandle} />
-            <View style={styles.steam} />
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Video over background - if it loads */}
-      {!videoError && (
+    <View style={[styles.container, style]}>
+      {!hasError ? (
         <Video
-          style={[styles.video, { opacity: videoLoaded ? 1 : 0 }]}
-          source={require('../assets/coffee_video.mp4')}
+          ref={videoRef}
+          source={videoSource}
+          style={styles.video}
           resizeMode={ResizeMode.COVER}
           shouldPlay
           isLooping
           isMuted
-          useNativeControls={false}
-          onLoad={() => {
-            console.log('Video loaded successfully');
-            setVideoLoaded(true);
-          }}
-          onError={(error) => {
-            console.log('Video error:', error);
-            setVideoError(true);
-          }}
+          onLoad={handleVideoLoad}
+          onError={handleVideoError}
         />
+      ) : null}
+      
+      {/* Fallback gradient if video fails or isn't loaded yet */}
+      {(!isVideoLoaded || hasError) && (
+        <LinearGradient
+          colors={fallbackColors}
+          style={styles.fallbackGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      )}
+      
+      {/* Overlay for better text readability */}
+      <LinearGradient
+        colors={['rgba(0, 0, 0, 0.1)', 'rgba(0, 0, 0, 0.05)']}
+        style={styles.overlay}
+      />
+      
+      {/* Content */}
+      {children && (
+        <View style={styles.content}>
+          {children}
+        </View>
       )}
     </View>
   );
@@ -59,73 +78,35 @@ export default function VideoBackground() {
 
 const styles = StyleSheet.create({
   container: {
-    width: width,
-    height: 600,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: -16,
-    marginTop: -100,
     position: 'relative',
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-  },
-  coffeeElements: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  coffeeBean: {
-    position: 'absolute',
-    width: 20,
-    height: 12,
-    backgroundColor: 'rgba(139, 69, 19, 0.3)',
-    borderRadius: 10,
-    transform: [{ rotate: '45deg' }],
-  },
-  centerCoffee: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 80,
-    height: 60,
-    backgroundColor: 'rgba(139, 69, 19, 0.8)',
-    borderRadius: 12,
-    transform: [{ translateX: -40 }, { translateY: -30 }],
-  },
-  coffeeHandle: {
-    position: 'absolute',
-    right: -15,
-    top: 15,
-    width: 12,
-    height: 30,
-    borderWidth: 3,
-    borderColor: 'rgba(139, 69, 19, 0.8)',
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-  },
-  steam: {
-    position: 'absolute',
-    top: -10,
-    left: 20,
-    width: 40,
-    height: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderRadius: 8,
+    overflow: 'hidden',
   },
   video: {
     position: 'absolute',
+    top: -10,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '110%',
+  },
+  fallbackGradient: {
+    position: 'absolute',
     top: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
+    right: 0,
+    bottom: 0,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  content: {
+    position: 'relative',
+    zIndex: 1,
+    flex: 1,
   },
 });
