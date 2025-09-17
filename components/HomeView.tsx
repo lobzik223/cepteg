@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useProducts } from '../hooks/useProducts';
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     marginLeft: isTablet ? 12 : 8,
   },
   logoText: {
-    fontSize: isTablet ? 34 : isSmallScreen ? 18 : 20,
+    fontSize: isTablet ? 28 : isSmallScreen ? 16 : 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   locationText: {
-    fontSize: isTablet ? 16 : isSmallScreen ? 12 : 14,
+    fontSize: isTablet ? 14 : isSmallScreen ? 11 : 12,
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
     marginTop: 2,

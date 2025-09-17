@@ -3,22 +3,22 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
-import { getCafesByNetwork } from '../data/demoCafes';
+import { networkService } from '../services/NetworkService';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -83,7 +83,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     }
   };
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     if (scanned || isShowingAlert || isProcessingRef.current) return;
     
     console.log('🔍 QR Code scanned:', { type, data });
@@ -105,7 +105,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       } catch {
         // If not JSON, treat as simple cafe code
         console.log('🔍 Treating as simple cafe code:', data);
-        const result = handleCafeCodeSubmit(data);
+        const result = await handleCafeCodeSubmit(data);
         if (!result) {
           // If handleCafeCodeSubmit didn't handle it, show error
           throw new Error('Invalid cafe code');
@@ -156,7 +156,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
     isProcessingRef.current = false;
   };
 
-  const handleCafeCodeSubmit = (code?: string): boolean => {
+  const handleCafeCodeSubmit = async (code?: string): Promise<boolean> => {
     const inputCode = code || cafeCode;
     console.log('🔍 handleCafeCodeSubmit called with code:', inputCode);
     
@@ -170,64 +170,53 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
       return false;
     }
 
-    // Map cafe codes to demo data
-    const cafeDataMap: Record<string, any> = {
-      'akafe': {
-        cafeId: 'demo_cafe_001',
-        cafeName: 'AKAFE',
-        location: 'Moscow, Arbat St. 1',
-        apiEndpoint: 'http://localhost:3000/api'
-      },
-      'brew': {
-        cafeId: 'demo_cafe_003',
-        cafeName: 'Brew & Bean',
-        location: 'Kazan, Bauman St. 15',
-        apiEndpoint: 'http://localhost:3002/api'
-      }
-    };
-
-    // Network search codes
-    const networkSearchCodes = ['coffee', 'emrahkeba'];
-
-    const lowerCode = inputCode.toLowerCase();
-    const cafeData = cafeDataMap[lowerCode];
-    console.log('🔍 Looking for code:', lowerCode);
-    console.log('🔍 Available codes:', Object.keys(cafeDataMap));
-    console.log('🔍 Network search codes:', networkSearchCodes);
-    console.log('🔍 Found cafe data:', cafeData);
-    
-    if (cafeData) {
-      console.log('🔍 Calling onCafeScanned with:', cafeData);
-      onCafeScanned(cafeData);
-      return true;
-    } else if (networkSearchCodes.includes(lowerCode)) {
-      console.log('🔍 Network search triggered for:', lowerCode);
-      const networkName = lowerCode === 'coffee' ? 'Coffee House' : 'Emrahkeba';
-      const cafes = getCafesByNetwork(networkName);
-      console.log('🔍 Found cafes for network:', cafes);
+    try {
+      // Используем NetworkService для валидации
+      const validation = await networkService.validateInput(inputCode);
+      console.log('🔍 Validation result:', validation);
       
-      if (onNetworkSearch && cafes.length > 0) {
-        onNetworkSearch(networkName, cafes);
+      if (validation.type === 'cafe' && validation.result.isValid) {
+        // Найдено конкретное кафе
+        const cafeResult = validation.result as any;
+        console.log('🔍 Calling onCafeScanned with:', cafeResult.cafeData);
+        onCafeScanned(cafeResult.cafeData);
         return true;
-      } else {
-        setIsShowingAlert(true);
-        Alert.alert(
-          'Network Not Found',
-          `We couldn't find any locations for ${networkName} network. Please try a different cafe name.`,
-          [{ text: 'OK', onPress: () => setIsShowingAlert(false) }]
-        );
-        return false;
+      } 
+      
+      if (validation.type === 'network' && validation.result.isValid) {
+        // Найдена сеть кафе
+        const networkResult = validation.result as any;
+        console.log('🔍 Network search triggered for:', networkResult.networkName);
+        console.log('🔍 Found cafes for network:', networkResult.cafes);
+        
+        if (onNetworkSearch && networkResult.cafes.length > 0) {
+          onNetworkSearch(networkResult.networkName, networkResult.cafes);
+          return true;
+        }
       }
-    } else {
-      console.log('🔍 Code not found, showing alert');
+      
+      // Не найдено
       setIsShowingAlert(true);
       Alert.alert(
         'Cafe Not Found',
-        'This cafe is not found in our network. Please try a different cafe name.',
+        validation.result.message || `Sorry, we couldn't find "${inputCode}" in our network.`,
         [
           { text: 'OK', onPress: () => setIsShowingAlert(false) }
         ]
       );
+      
+      return false;
+    } catch (error) {
+      console.error('Error validating input:', error);
+      setIsShowingAlert(true);
+      Alert.alert(
+        'Connection Error',
+        'Failed to validate cafe. Please check your internet connection.',
+        [
+          { text: 'OK', onPress: () => setIsShowingAlert(false) }
+        ]
+      );
+      
       return false;
     }
   };
@@ -287,7 +276,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               style={styles.cafeCodeInput}
               value={cafeCode}
               onChangeText={setCafeCode}
-              placeholder="Try: coffee, emrahkeba, brew..."
+              placeholder="Try: coffee, brew..."
               placeholderTextColor="#999"
               autoCapitalize="none"
               autoCorrect={false}
@@ -369,7 +358,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
               style={styles.cafeCodeInput}
               value={cafeCode}
               onChangeText={setCafeCode}
-              placeholder="Try: coffee, emrahkeba, brew..."
+              placeholder="Try: coffee, brew..."
               placeholderTextColor="#999"
               autoCapitalize="none"
               autoCorrect={false}
@@ -487,7 +476,7 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({
                   style={styles.cafeCodeInput}
                   value={cafeCode}
                   onChangeText={setCafeCode}
-                  placeholder="Try: coffee, emrahkeba, brew..."
+                  placeholder="Try: coffee, brew..."
                   placeholderTextColor="#999"
                   autoCapitalize="none"
                   autoCorrect={false}

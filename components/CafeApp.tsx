@@ -309,17 +309,6 @@ export const CafeApp: React.FC = () => {
                     });
                   }
                 },
-                {
-                  text: 'Emrahkeba',
-                  onPress: () => {
-                    handleQRScan({
-                      cafeId: 'demo_cafe_004',
-                      cafeName: 'Emrahkeba',
-                      location: 'Istanbul, Taksim Square 25',
-                      apiEndpoint: 'http://localhost:3003/api'
-                    });
-                  }
-                }
               ]
             );
           }}

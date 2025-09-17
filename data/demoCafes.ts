@@ -62,52 +62,6 @@ export const demoCafes: Cafe[] = [
       videoPosition: 'right',
     },
   },
-  // Emrahkeba Network
-  {
-    id: 'demo_cafe_004',
-    name: 'Emrahkeba - Taksim',
-    location: 'Istanbul, Taksim Square 25',
-    description: 'Authentic Turkish restaurant with traditional kebabs and drinks',
-    logoUrl: 'https://example.com/emrahkeba-logo.png',
-    apiEndpoint: 'http://localhost:3003/api',
-    isActive: true,
-    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
-    videoConfig: {
-      localVideoPath: 'coffee_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'center',
-    },
-  },
-  {
-    id: 'demo_cafe_007',
-    name: 'Emrahkeba - Sultanahmet',
-    location: 'Istanbul, Sultanahmet Square 5',
-    description: 'Historic location with traditional Turkish cuisine',
-    logoUrl: 'https://example.com/emrahkeba-logo.png',
-    apiEndpoint: 'http://localhost:3003/api',
-    isActive: true,
-    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
-    videoConfig: {
-      localVideoPath: 'coffee_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'center',
-    },
-  },
-  {
-    id: 'demo_cafe_008',
-    name: 'Emrahkeba - Kadikoy',
-    location: 'Istanbul, Kadikoy Market 12',
-    description: 'Local favorite with fresh ingredients and family recipes',
-    logoUrl: 'https://example.com/emrahkeba-logo.png',
-    apiEndpoint: 'http://localhost:3003/api',
-    isActive: true,
-    categories: ['hot-drinks', 'cold-drinks', 'kebabs', 'appetizers'],
-    videoConfig: {
-      localVideoPath: 'coffee_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'center',
-    },
-  },
 ];
 
 // Network definitions
@@ -117,12 +71,6 @@ export const cafeNetworks = {
     description: 'Premium coffee chain with locations across Russia',
     cafes: ['demo_cafe_002', 'demo_cafe_005', 'demo_cafe_006'],
     logoUrl: 'https://example.com/coffee-house-network-logo.png',
-  },
-  'Emrahkeba': {
-    name: 'Emrahkeba',
-    description: 'Authentic Turkish restaurant chain in Istanbul',
-    cafes: ['demo_cafe_004', 'demo_cafe_007', 'demo_cafe_008'],
-    logoUrl: 'https://example.com/emrahkeba-network-logo.png',
   },
   'Brew & Bean': {
     name: 'Brew & Bean',
@@ -154,10 +102,4 @@ export const demoQRCodes = {
     location: 'Kazan, Bauman St. 15',
     apiEndpoint: 'http://localhost:3002/api'
   },
-  emrahkeba: {
-    cafeId: 'demo_cafe_004',
-    cafeName: 'Emrahkeba',
-    location: 'Istanbul, Taksim Square 25',
-    apiEndpoint: 'http://localhost:3003/api'
-  }
 };
