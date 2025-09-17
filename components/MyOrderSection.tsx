@@ -169,7 +169,7 @@ export const MyOrderSection: React.FC<MyOrderSectionProps> = ({
         cafeName={cafeName}
         cafeAddress={cafeAddress}
         paymentMethod="Credit Card"
-        orderDate={new Date().toLocaleDateString()}
+        orderDate={new Date().toLocaleDateString() + ' at ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
       />
     </>
   );

@@ -43,7 +43,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   cafeName = 'Cafe',
   cafeAddress = 'Address not specified',
   paymentMethod = 'Credit Card',
-  orderDate = new Date().toLocaleDateString()
+  orderDate = new Date().toLocaleDateString() + ' at ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
 }) => {
   const calculateTotal = () => {
     return orderItems.reduce((total, item) => {
