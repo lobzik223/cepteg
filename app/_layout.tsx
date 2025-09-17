@@ -6,26 +6,27 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { AuthProvider } from '../_src/context/AuthContext'; // ⬅️ İçe aktar
+import { AuthProvider } from '../_src/context/AuthContext';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-
   if (!loaded) return null;
 
   return (
-    <AuthProvider>  {/* ⬅️ Root’ta sarmala */}
+    <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          {/* Dosya yapına göre bu satırları düzenleyebilirsin */}
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="panel" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
+        {/* Root Stack sadece sayfaların başlık/opsiyonlarını yönetir */}
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* DİKKAT: Grup adı parantezli olmalı */}
+          <Stack.Screen name="(panel)" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />
         </Stack>
-        <StatusBar style="auto" />
+
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>
     </AuthProvider>
   );

@@ -5,7 +5,7 @@ import { BarChart, LineChart } from 'react-native-chart-kit';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function Dashboard() {
+export default function cashboard() {
   const revenueData = [12, 19, 15, 25, 30, 40, 38]; // Örnek aylık gelir
   const ordersData = [20, 35, 40, 30, 50, 60, 45];  // Örnek sipariş grafiği
 

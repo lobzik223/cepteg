@@ -1,10 +1,9 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import Panel from '../../screens/panel';
-import Login from '../../screens/panel/login';
-import OnboardingView from '../../screens/panel/OnboardingView';
-
+import Panel from '../panel';
+import Login from '../panel/login';
+import { OnboardingView } from '../panel/OnboardingView';
 const Stack = createNativeStackNavigator();
 
 export default function App() {

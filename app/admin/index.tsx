@@ -1,4 +1,4 @@
-import Login from "../../_src/screens/panel/login";
+import Login from "../panel/login";
 
 
 export default function AdminEntry() {

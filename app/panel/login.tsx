@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../_src/context/AuthContext'; // ✅ DÜZELTİLDİ
 
 type UserRole = 'CEPEG_ADMIN' | 'RESTAURANT_OWNER' | 'RESTAURANT_MANAGER';
 
@@ -25,7 +25,6 @@ type DummyUser = {
 const DUMMY_USERS: DummyUser[] = [
   { email: 'admin@cepteg', password: '123456', role: 'CEPEG_ADMIN' },
   { email: 'owner@demo', password: '123456', role: 'RESTAURANT_OWNER', tenantId: 1, branchId: 1 },
-  // Diğer roller gerekirse eklenebilir
 ];
 
 export default function Login() {
@@ -42,52 +41,42 @@ export default function Login() {
       return;
     }
     setBusy(true);
+    try {
+      // Simüle gecikme
+      await new Promise((r) => setTimeout(r, 400));
 
-    // Simüle gecikme
-    await new Promise((r) => setTimeout(r, 400));
+      const found = DUMMY_USERS.find((u) => u.email === email && u.password === password);
 
-    const found = DUMMY_USERS.find((u) => u.email === email && u.password === password);
+      // Parola doğruysa e-postaya göre manager yarat (demo)
+      const demo =
+        !found && password === '123456'
+          ? ({ email, password, role: 'RESTAURANT_MANAGER', tenantId: 1, branchId: 1 } as DummyUser)
+          : null;
 
-    // Eğer bulunmaz ama parolası doğruysa otomatik manager oluştur (demo için)
-    const demo =
-      !found && password === '123456'
-        ? ({ email, password, role: 'RESTAURANT_MANAGER', tenantId: 1, branchId: 1 } as DummyUser)
-        : null;
+      const user = found || demo;
+      if (!user) {
+        Alert.alert('Giriş başarısız', 'E-posta veya parola hatalı.');
+        return;
+      }
 
-    const user = found || demo;
-    if (!user) {
+      // ✅ AuthContext'e login kaydı (token üret, expires opsiyonel)
+      const ttlMinutes = 30; // demo
+      const tokenExpiresAt = Date.now() + ttlMinutes * 60 * 1000;
+
+      login({
+        token: Math.random().toString(36).slice(2), // ✅ token zorunluysa
+        role: user.role,
+        tenantId: user.tenantId ?? null,
+        branchId: user.branchId ?? null,
+        // AuthUser tipinde varsa (opsiyonel):
+        // tokenExpiresAt,
+      } as any);
+
+      // ✅ Doğru rota: grup (panel) gizli; "/panel" yok
+      router.replace('/panel/dashboard'); // veya router.replace('/(panel)/dashboard')
+    } finally {
       setBusy(false);
-      Alert.alert('Giriş başarısız', 'E-posta veya parola hatalı.');
-      return;
     }
-
-    // ✅ AuthContext'e login kaydı (token + expiry oluşturulur)
-    const ttlMinutes = 30; // demo için 30 dk
-    const tokenExpiresAt = Date.now() + ttlMinutes * 60 * 1000;
-    login({
-      role: user.role,
-      tenantId: user.tenantId ?? null,
-      branchId: user.branchId ?? null,
-      tokenExpiresAt,
-    });
-
-    // ✅ Rol bazlı yönlendirme
-    switch (user.role) {
-      case 'CEPEG_ADMIN':
-        router.replace('/panel'); // Tüm menü yetkisi olan admin paneli
-        break;
-      case 'RESTAURANT_OWNER':
-        router.replace('/panel'); // Restaurant owner için panel
-        break;
-      case 'RESTAURANT_MANAGER':
-        router.replace('/panel'); // Manager panel (daha kısıtlı menü)
-        break;
-      default:
-        router.replace('/panel');
-        break;
-    }
-
-    setBusy(false);
   }
 
   return (
@@ -126,8 +115,7 @@ export default function Login() {
         </TouchableOpacity>
 
         <Text style={styles.hint}>
-          Demo: admin@cepteg / 123456 • owner@demo / 123456 (manager için sadece email
-          gir + 123456)
+          Demo: admin@cepteg / 123456 • owner@demo / 123456 (manager için sadece email yaz + 123456)
         </Text>
       </View>
     </View>
