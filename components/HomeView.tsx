@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
     Dimensions,
+    Image,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -15,10 +15,11 @@ import {
 } from 'react-native';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useProducts } from '../hooks/useProducts';
+import { authService, User } from '../services/AuthService';
 import { Cafe } from '../services/CafeService';
 import { Product, ProductCategory } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
-import CafeVideoView from './CafeVideoView';
+import AuthModal from './AuthModal';
 import CheckoutModal from './CheckoutModal';
 import DrinkCard from './DrinkCard';
 import { MyOrderSection } from './MyOrderSection';
@@ -28,9 +29,7 @@ import { PromoCodesSection } from './PromoCodesSection';
 
 const { width, height } = Dimensions.get('window');
 const isSmallScreen = width < 375;
-const isLargeScreen = width > 414;
 const isTablet = width >= 768;
-const isLandscape = width > height;
 
 interface HomeViewProps {
   onProfilePress?: () => void;
@@ -54,6 +53,8 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
   console.log('HomeView render - currentOrder:', currentOrder);
   const [isCheckoutModalVisible, setIsCheckoutModalVisible] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Ref для ScrollView и раздела "Мой заказ"
   const scrollViewRef = useRef<ScrollView>(null);
@@ -137,8 +138,61 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
     setSelectedProduct(null);
   };
 
-  const handleProfilePress = () => {
+  // Check auth state on component mount
+  useEffect(() => {
+    checkAuthState();
+  }, []);
+
+  const checkAuthState = async () => {
+    try {
+      const isLoggedIn = await authService.isUserLoggedIn();
+      if (isLoggedIn) {
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+    }
+  };
+
+  const handleProfilePress = async () => {
+    try {
+      const isLoggedIn = await authService.isUserLoggedIn();
+      
+      if (isLoggedIn) {
+        // Пользователь авторизован - показываем профиль
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+        setIsProfileModalVisible(true);
+      } else {
+        // Пользователь не авторизован - показываем форму входа/регистрации
+        setIsAuthModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Error handling profile press:', error);
+      // В случае ошибки показываем форму авторизации
+      setIsAuthModalVisible(true);
+    }
+  };
+
+  const handleAuthSuccess = (user: User) => {
+    setCurrentUser(user);
+    setIsAuthModalVisible(false);
     setIsProfileModalVisible(true);
+  };
+
+  const handleProfileUpdated = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      setCurrentUser(null);
+      setIsProfileModalVisible(false);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   // Cart functions
@@ -369,36 +423,48 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Video background with overlay elements */}
-        <View style={styles.videoContainer}>
-          <CafeVideoView cafe={cafe || null} />
-        </View>
-        
-        {/* Overlay elements on top of video */}
-        <View style={styles.overlayContainer}>
-          <View style={styles.headerRow}>
-            {/* Back button and cafe name */}
-            <View style={styles.logoContainer}>
-              {onBackToScanner && (
+        {/* Cepteg App Header */}
+        <View style={styles.appHeader}>
+          {/* Background Logo Image */}
+          <View style={styles.logoBackgroundContainer}>
+            <Image 
+              source={require('../assets/images/logoview.png')} 
+              style={styles.logoBackgroundImage}
+              resizeMode="cover"
+            />
+          </View>
+          
+          {/* Overlay Content */}
+          <View style={styles.headerOverlay}>
+            <View style={styles.titleRow}>
+              {onBackToScanner ? (
                 <TouchableOpacity onPress={onBackToScanner} style={styles.backButton}>
-                  <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#FFFFFF" />
+                  <Ionicons name="arrow-back" size={isTablet ? 32 : 28} color="#376138" />
                 </TouchableOpacity>
+              ) : (
+                <View style={styles.backButton} />
               )}
-              <View style={styles.cafeInfoContainer}>
-                <Ionicons name="cafe" size={isTablet ? 40 : 32} color="#FFFFFF" />
-                <View style={styles.cafeTextContainer}>
-                  <Text style={styles.logoText}>{cafe?.name || 'Coffee Cafe'}</Text>
-                  {cafe?.location && (
-                    <Text style={styles.locationText}>{cafe.location}</Text>
-                  )}
-                </View>
-              </View>
+              
+              
+              <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
+                <Ionicons name="person" size={isTablet ? 32 : 28} color="#376138" />
+              </TouchableOpacity>
             </View>
-            
-            {/* Profile button */}
-            <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
-              <Ionicons name="person-circle-outline" size={isTablet ? 44 : 36} color="#FFFFFF" />
-            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Cafe Info Section */}
+        <View style={styles.cafeInfoSection}>
+          <View style={styles.cafeInfoContent}>
+            <View style={styles.locationIconContainer}>
+              <Ionicons name="location" size={isTablet ? 36 : 28} color="#FFFFFF" />
+            </View>
+            <View style={styles.cafeTextContainer}>
+              <Text style={styles.cafeNameText}>{cafe?.name || 'Coffee Cafe'}</Text>
+              {cafe?.location && (
+                <Text style={styles.cafeLocationText}>{cafe.location}</Text>
+              )}
+            </View>
           </View>
         </View>
 
@@ -421,13 +487,9 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         {cafe?.id && (
           <PromoCodesSection
             cafeId={cafe.id}
-            onPromoCodePress={(promoCode) => {
-              console.log('Promo code pressed:', promoCode.title);
-              // Handle promo code press - could show details or apply
-            }}
-            onPromoCodeApply={(promoCode) => {
-              console.log('Promo code apply:', promoCode.title);
-              // Handle promo code application
+            onPromoCodeImagePress={(promoImage) => {
+              console.log('Promo code image pressed:', promoImage.id);
+              // Handle promo code image press - could show details or apply
             }}
           />
         )}
@@ -587,10 +649,20 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
       />
 
 
+      {/* Auth Modal */}
+      <AuthModal
+        visible={isAuthModalVisible}
+        onClose={() => setIsAuthModalVisible(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
+
       {/* Profile Modal */}
       <ProfileModal
         visible={isProfileModalVisible}
         onClose={() => setIsProfileModalVisible(false)}
+        user={currentUser}
+        onLogout={handleLogout}
+        onProfileUpdated={handleProfileUpdated}
       />
 
       {/* Floating Cart Widget - Always Visible */}
@@ -613,19 +685,17 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         ]}
       >
         <TouchableOpacity style={styles.floatingCartButton} onPress={openCartModal}>
-          <LinearGradient
-            colors={cartItems.length > 0 ? ['#6B7280', '#4B5563'] : ['#9E9E9E', '#757575', '#616161']}
-            style={styles.floatingCartGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+          <View style={[
+            styles.floatingCartGradient,
+            { backgroundColor: cartItems.length > 0 ? '#359441' : '#9E9E9E' }
+          ]}>
             <Ionicons name="cart" size={isTablet ? 24 : 20} color="#fff" />
-          </LinearGradient>
-          {/* Показ содержимого корзины */}
+          </View>
+          {/* Счетчик товаров */}
           {cartItems.length > 0 && (
-            <View style={styles.cartPreview}>
-              <Text style={styles.cartPreviewText}>
-                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+            <View style={styles.cartCounter}>
+              <Text style={styles.cartCounterText}>
+                {cartItems.length}
               </Text>
             </View>
           )}
@@ -719,8 +789,13 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
                  disabled={cartItems.length === 0}
                >
                  <View style={styles.checkoutButtonGradient}>
-                   <Ionicons name="card" size={20} color="#fff" />
-                   <Text style={styles.checkoutButtonText}>Place Order</Text>
+                   <Ionicons name="card" size={20} color={cartItems.length === 0 ? "#9CA3AF" : "#fff"} />
+                   <Text style={[
+                     styles.checkoutButtonText,
+                     cartItems.length === 0 && { color: '#9CA3AF' }
+                   ]}>
+                     {cartItems.length === 0 ? 'Add items to cart' : 'Place Order'}
+                   </Text>
                  </View>
                </TouchableOpacity>
             </View>
@@ -740,57 +815,118 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  videoContainer: {
-    height: isTablet 
-      ? (isLandscape ? 600 : 750) 
-      : isSmallScreen ? 500 : isLargeScreen ? 650 : 600,
+  appHeader: {
     position: 'relative',
-    marginHorizontal: isTablet ? -100 : -16,
-    marginTop: isTablet ? -40 : -40,
-    width: isTablet ? width + 1000 : width + 600, 
-    marginLeft: isTablet ? -25 : 0, 
+    paddingTop: isTablet ? 50 : 45,
+    paddingBottom: isTablet ? 25 : 20,
+    paddingHorizontal: isTablet ? 40 : 20,
+    marginTop: isTablet ? -50 : -45,
+    marginBottom: isTablet ? -25 : -20,
+    marginHorizontal: isTablet ? -40 : -16,
+    borderBottomLeftRadius: isTablet ? 40 : 35,
+    borderBottomRightRadius: isTablet ? 40 : 35,
     overflow: 'hidden',
-    borderRadius: isTablet ? 32 : 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
   },
-  overlayContainer: {
+  logoBackgroundContainer: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    justifyContent: 'flex-start',
-    pointerEvents: 'box-none',
+    top: isTablet ? 20 : 15,
+    left: 5,
+    right: -5,
+    bottom: 0,
+    zIndex: 1,
+    borderBottomLeftRadius: isTablet ? 55 : 50,
+    borderBottomRightRadius: isTablet ? 65 : 60,
+    overflow: 'hidden',
   },
-  headerRow: {
+  logoBackgroundImage: {
+    width: '95%',
+    height: '100%',
+  },
+  headerOverlay: {
+    position: 'relative',
+    zIndex: 2,
+    flex: 1,
+  },
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: isTablet ? 70 : 20,
-    paddingTop: isTablet ? 25 : 20, 
-    paddingBottom: 20,
+    width: '100%',
+    minHeight: isTablet ? 60 : 52,
+  },
+  cafeInfoSection: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: isTablet ? 12 : 8,
+    paddingHorizontal: isTablet ? 20 : 10,
+    marginHorizontal: isTablet ? 20 : 16,
+    marginVertical: isTablet ? 8 : 6,
+    borderRadius: isTablet ? 10 : 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  cafeInfoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: isTablet ? 0 : 0,
+    paddingHorizontal: isTablet ? 0 : 0,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   backButton: {
-    marginRight: isTablet ? 15 : 10,
-    padding: 5,
+    width: isTablet ? 48 : 44,
+    height: isTablet ? 48 : 44,
+    borderRadius: isTablet ? 24 : 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 0,
   },
   cafeInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  locationIconContainer: {
+    width: isTablet ? 48 : 40,
+    height: isTablet ? 48 : 40,
+    borderRadius: isTablet ? 24 : 20,
+    backgroundColor: '#359441',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#359441',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   cafeTextContainer: {
-    marginLeft: isTablet ? 12 : 8,
+    marginLeft: isTablet ? 16 : 12,
+    flex: 1,
+  },
+  cafeNameText: {
+    fontSize: isTablet ? 22 : 18,
+    fontWeight: '600',
+    color: '#376138',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  cafeLocationText: {
+    fontSize: isTablet ? 16 : 14,
+    fontWeight: '400',
+    color: '#6B7280',
+    letterSpacing: 0.3,
+    lineHeight: isTablet ? 22 : 20,
   },
   logoText: {
     fontSize: isTablet ? 28 : isSmallScreen ? 16 : 18,
@@ -810,14 +946,37 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   profileButton: {
-    padding: 8,
-    pointerEvents: 'auto',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: 20,
-    minWidth: 44,
-    minHeight: 44,
+    width: isTablet ? 48 : 44,
+    height: isTablet ? 48 : 44,
+    borderRadius: isTablet ? 24 : 22,
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 0,
+  },
+  appTitle: {
+    fontSize: isTablet ? 52 : 46,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 1.5,
+    flex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 6 },
+    textShadowRadius: 12,
+    transform: [{ scaleY: 1.15 }, { scaleX: 1.05 }],
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  appSubtitle: {
+    fontSize: isTablet ? 16 : 14,
+    fontWeight: '300',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textAlign: 'center',
+    marginTop: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
   },
   contentContainer: {
     backgroundColor: '#fff',
@@ -872,24 +1031,27 @@ const styles = StyleSheet.create({
     marginRight: isTablet ? 16 : 12,
   },
   selectedCategoryButton: {
-    backgroundColor: '#666',
+    backgroundColor: '#376138',
   },
   categoryText: {
     fontSize: isTablet ? 20 : 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '300',
+    color: '#374151',
+    letterSpacing: 0.5,
   },
   selectedCategoryText: {
     color: '#fff',
+    fontWeight: '400',
   },
   section: {
     marginBottom: 30,
   },
   sectionTitle: {
     fontSize: isTablet ? 28 : isSmallScreen ? 20 : 22,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
     marginBottom: isTablet ? 24 : 16,
+    letterSpacing: 0.8,
   },
   drinksHorizontalScroll: {
     marginHorizontal: isTablet ? -40 : -16, 
@@ -908,8 +1070,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    fontWeight: '300',
+    color: '#9CA3AF',
     marginTop: 12,
+    letterSpacing: 0.3,
   },
   errorContainer: {
     alignItems: 'center',
@@ -918,9 +1082,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#666',
+    fontWeight: '300',
+    color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 16,
+    letterSpacing: 0.3,
   },
   retryButton: {
     backgroundColor: '#666',
@@ -931,7 +1097,8 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '400',
+    letterSpacing: 0.5,
   },
   emptyStateContainer: {
     alignItems: 'center',
@@ -941,18 +1108,21 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: isTablet ? 24 : 20,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontWeight: '400',
+    color: '#6B7280',
     marginTop: isTablet ? 20 : 16,
     marginBottom: isTablet ? 12 : 8,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   emptyStateText: {
     fontSize: isTablet ? 18 : 16,
-    color: '#9CA3AF',
+    fontWeight: '300',
+    color: '#D1D5DB',
     textAlign: 'center',
     lineHeight: isTablet ? 26 : 24,
     maxWidth: isTablet ? 400 : 300,
+    letterSpacing: 0.3,
   },
   // Floating Cart Widget Styles
   floatingCartWidget: {
@@ -985,21 +1155,37 @@ const styles = StyleSheet.create({
     borderRadius: isTablet ? 30 : 25,
     position: 'relative',
   },
-  cartPreview: {
+  cartCounter: {
     position: 'absolute',
-    bottom: -25,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    top: -12,
+    right: -12,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 15,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    minWidth: 18,
+    minHeight: 18,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#FF6B6B',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 8,
   },
-  cartPreviewText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
+  cartCounterText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   // Cart Modal Styles
@@ -1038,9 +1224,10 @@ const styles = StyleSheet.create({
   },
   cartModalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
     marginLeft: 12,
+    letterSpacing: 0.8,
   },
   cartModalCloseButton: {
     width: 40,
@@ -1058,12 +1245,15 @@ const styles = StyleSheet.create({
   },
   cartSummaryText: {
     fontSize: 16,
-    color: '#666',
+    fontWeight: '300',
+    color: '#9CA3AF',
+    letterSpacing: 0.3,
   },
   cartTotalHeader: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
+    letterSpacing: 0.5,
   },
   cartItemsList: {
     maxHeight: 400,
@@ -1098,14 +1288,16 @@ const styles = StyleSheet.create({
   },
   cartItemName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
     marginBottom: 4,
+    letterSpacing: 0.3,
   },
   cartItemPrice: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: '#9CA3AF',
+    fontWeight: '300',
+    letterSpacing: 0.3,
   },
   cartItemActions: {
     flexDirection: 'row',
@@ -1121,11 +1313,12 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
     marginHorizontal: 20,
     minWidth: 20,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   emptyCartContainer: {
     alignItems: 'center',
@@ -1133,14 +1326,17 @@ const styles = StyleSheet.create({
   },
   emptyCartText: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#999',
+    fontWeight: '400',
+    color: '#9CA3AF',
     marginTop: 20,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   emptyCartSubtext: {
     fontSize: 16,
-    color: '#ccc',
+    fontWeight: '300',
+    color: '#D1D5DB',
+    letterSpacing: 0.3,
   },
   cartModalFooter: {
     paddingHorizontal: 20,
@@ -1157,13 +1353,15 @@ const styles = StyleSheet.create({
   },
   cartTotalLabel: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '400',
+    color: '#374151',
+    letterSpacing: 0.5,
   },
   cartTotalAmount: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '500',
+    color: '#374151',
+    letterSpacing: 0.8,
   },
   checkoutButtonLarge: {
     borderRadius: 25,

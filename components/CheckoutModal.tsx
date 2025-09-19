@@ -1,20 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Image,
+    LayoutAnimation,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
-import { PromoCodesSection } from './PromoCodesSection';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -46,6 +49,12 @@ export default function CheckoutModal({
 }: CheckoutModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
+  
+  // Enable LayoutAnimation for Android
+  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
   
   // Payment form states
   const [cardNumber, setCardNumber] = useState('');
@@ -76,8 +85,34 @@ export default function CheckoutModal({
         if (item.quantity > 1) {
           onUpdateQuantity(productId, item.quantity - 1);
         } else if (onRemoveItem) {
-          // Remove item if quantity becomes 0
-          onRemoveItem(productId);
+          // Animate removal
+          setRemovingItems(prev => new Set(prev).add(productId));
+          
+          // Configure LayoutAnimation for smooth removal
+          LayoutAnimation.configureNext({
+            duration: 200,
+            create: {
+              type: LayoutAnimation.Types.easeOut,
+              property: LayoutAnimation.Properties.opacity,
+            },
+            update: {
+              type: LayoutAnimation.Types.easeOut,
+            },
+            delete: {
+              type: LayoutAnimation.Types.easeOut,
+              property: LayoutAnimation.Properties.opacity,
+            },
+          });
+          
+          // Remove item after a short delay for animation
+          setTimeout(() => {
+            onRemoveItem(productId);
+            setRemovingItems(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(productId);
+              return newSet;
+            });
+          }, 80);
         }
       }
     }
@@ -142,8 +177,20 @@ export default function CheckoutModal({
   };
 
 
-  const renderCartItem = (item: CartItem, index: number) => (
-    <View key={index} style={styles.cartItem}>
+  const renderCartItem = (item: CartItem, index: number) => {
+    const isRemoving = removingItems.has(item.product.id);
+    
+    return (
+      <Animated.View 
+        key={index} 
+        style={[
+          styles.cartItem,
+          isRemoving && {
+            opacity: 0.2,
+            transform: [{ scale: 0.9 }],
+          }
+        ]}
+      >
       {/* Product Image */}
       <View style={styles.itemImageContainer}>
         {item.product.imageUrl ? (
@@ -205,8 +252,9 @@ export default function CheckoutModal({
           {formatPrice(item.product.price)} each
         </Text>
       </View>
-    </View>
-  );
+      </Animated.View>
+    );
+  };
 
   const renderPaymentForm = () => (
     <View style={styles.container}>
@@ -327,7 +375,7 @@ export default function CheckoutModal({
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="#333" />
+          <Ionicons name="close" size={24} color="#376138" />
         </TouchableOpacity>
       </View>
 
@@ -339,26 +387,18 @@ export default function CheckoutModal({
           </Text>
         </View>
 
-        <View style={styles.itemsContainer}>
-          {cartItems.map((item, index) => renderCartItem(item, index))}
-        </View>
-
-        {/* Promo codes section */}
-        {cafeId && (
-          <View style={styles.promoSection}>
-            <PromoCodesSection
-              cafeId={cafeId}
-              onPromoCodePress={(promoCode) => {
-                console.log('Promo code pressed:', promoCode.title);
-                // Handle promo code press - could show details or apply
-              }}
-              onPromoCodeApply={(promoCode) => {
-                console.log('Promo code apply:', promoCode.title);
-                // Handle promo code application
-              }}
-            />
+        {cartItems.length > 0 ? (
+          <View style={styles.itemsContainer}>
+            {cartItems.map((item, index) => renderCartItem(item, index))}
+          </View>
+        ) : (
+          <View style={styles.emptyCartContainer}>
+            <Ionicons name="cart-outline" size={isTablet ? 80 : 64} color="#9CA3AF" />
+            <Text style={styles.emptyCartText}>Cart is empty</Text>
+            <Text style={styles.emptyCartSubtext}>Add items to your order</Text>
           </View>
         )}
+
 
         <View style={styles.totalContainer}>
           <View style={styles.totalRow}>
@@ -378,16 +418,25 @@ export default function CheckoutModal({
 
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.placeOrderButton, isProcessing && styles.disabledButton]}
+          style={[styles.placeOrderButton, (isProcessing || cartItems.length === 0) && styles.disabledButton]}
           onPress={handlePlaceOrder}
-          disabled={isProcessing}
+          disabled={isProcessing || cartItems.length === 0}
         >
           {isProcessing ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="card" size={20} color="#fff" />
-              <Text style={styles.placeOrderText}>Place Order</Text>
+              <Ionicons 
+                name="card" 
+                size={20} 
+                color={cartItems.length === 0 ? "#9CA3AF" : "#fff"} 
+              />
+              <Text style={[
+                styles.placeOrderText,
+                cartItems.length === 0 && { color: '#9CA3AF' }
+              ]}>
+                {cartItems.length === 0 ? 'Add items to cart' : 'Place Order'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -460,7 +509,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: isTablet ? 28 : 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#376138',
     marginBottom: 4,
   },
   subtitle: {
@@ -608,12 +657,12 @@ const styles = StyleSheet.create({
   finalTotalLabel: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#376138',
   },
   finalTotalValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#376138',
   },
   bottomBar: {
     paddingHorizontal: 20,
@@ -623,16 +672,16 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   placeOrderButton: {
-    backgroundColor: '#374151',
+    backgroundColor: '#359441',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#000',
+    shadowColor: '#359441',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -685,15 +734,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   payButton: {
-    backgroundColor: '#374151',
+    backgroundColor: '#359441',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 20,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: '#359441',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -707,8 +756,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#374151',
   },
-  promoSection: {
-    marginBottom: 16,
+  emptyCartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: isTablet ? 60 : 40,
+    paddingHorizontal: 20,
+  },
+  emptyCartText: {
+    fontSize: isTablet ? 24 : 20,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: isTablet ? 20 : 16,
+    marginBottom: isTablet ? 12 : 8,
+    textAlign: 'center',
+  },
+  emptyCartSubtext: {
+    fontSize: isTablet ? 18 : 16,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: isTablet ? 26 : 24,
   },
   // Payment form specific styles
   paymentHeader: {

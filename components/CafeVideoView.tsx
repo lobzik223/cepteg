@@ -24,40 +24,8 @@ export default function CafeVideoView({ cafe }: CafeVideoViewProps) {
   const fallbackColors = videoConfig?.fallbackColors || ['#E8F4FD', '#D1E7DD', '#C3E9C0'];
   const videoPosition = videoConfig?.videoPosition || 'center';
 
-  // Determine video source
-  const getVideoSource = () => {
-    if (!videoConfig) {
-      // Default video for cafes without config
-      return require('../assets/coffee_video.mp4');
-    }
-
-    if (videoConfig.videoUrl) {
-      // Server video URL
-      return { uri: videoConfig.videoUrl };
-    }
-
-    if (videoConfig.localVideoPath) {
-      // Local video path for demo cafes - use static mapping
-      const videoMap: Record<string, any> = {
-        'coffee_video.mp4': require('../assets/coffee_video.mp4'),
-        'coffee_house_video.mp4': require('../assets/coffee_house_video.mp4'),
-        'brew_bean_video.mp4': require('../assets/brew_bean_video.mp4'),
-      };
-
-      const videoSource = videoMap[videoConfig.localVideoPath];
-      if (videoSource) {
-        return videoSource;
-      } else {
-        console.warn(`Video not found: ${videoConfig.localVideoPath}, using default`);
-        return require('../assets/coffee_video.mp4');
-      }
-    }
-
-    // Fallback to default video
-    return require('../assets/coffee_video.mp4');
-  };
-
-  const videoSource = getVideoSource();
+  // Videos have been removed from the project
+  const videoSource = null;
 
   // Get container styles based on video position using service
   const getContainerStyles = () => {

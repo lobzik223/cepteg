@@ -25,14 +25,11 @@ export class CafeVideoService {
   }
 
   /**
-   * Get default video configuration
+   * Get default video configuration - videos removed
    */
-  public getDefaultVideoConfig(): VideoConfig {
-    return {
-      localVideoPath: 'coffee_video.mp4',
-      fallbackColors: ['#E8F4FD', '#D1E7DD', '#C3E9C0'],
-      videoPosition: 'center',
-    };
+  public getDefaultVideoConfig(): null {
+    // Videos have been removed from the project
+    return null;
   }
 
   /**
@@ -58,71 +55,19 @@ export class CafeVideoService {
   }
 
   /**
-   * Get available video presets for admin panel
+   * Get available video presets for admin panel - videos removed
    */
-  public getVideoPresets(): Array<{ id: string; name: string; config: VideoConfig }> {
-    return [
-      {
-        id: 'coffee-classic',
-        name: 'Classic Coffee',
-        config: {
-          localVideoPath: 'coffee_video.mp4',
-          fallbackColors: ['#E8F4FD', '#D1E7DD', '#C3E9C0'],
-          videoPosition: 'center',
-        },
-      },
-      {
-        id: 'coffee-warm',
-        name: 'Warm Coffee',
-        config: {
-          localVideoPath: 'coffee_video.mp4',
-          fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-          videoPosition: 'left',
-        },
-      },
-      {
-        id: 'coffee-green',
-        name: 'Green Brew',
-        config: {
-          localVideoPath: 'coffee_video.mp4',
-          fallbackColors: ['#ECFDF5', '#D1FAE5', '#10B981'],
-          videoPosition: 'right',
-        },
-      },
-      {
-        id: 'coffee-purple',
-        name: 'Purple Blend',
-        config: {
-          localVideoPath: 'coffee_video.mp4',
-          fallbackColors: ['#F3E8FF', '#DDD6FE', '#8B5CF6'],
-          videoPosition: 'center',
-        },
-      },
-    ];
+  public getVideoPresets(): any[] {
+    // Videos have been removed from the project
+    return [];
   }
 
   /**
-   * Validate video configuration
+   * Validate video configuration - videos removed
    */
-  public validateVideoConfig(config: VideoConfig): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (!config.videoUrl && !config.localVideoPath) {
-      errors.push('Either videoUrl or localVideoPath must be provided');
-    }
-
-    if (config.fallbackColors && config.fallbackColors.length < 2) {
-      errors.push('Fallback colors must have at least 2 colors');
-    }
-
-    if (config.videoPosition && !['center', 'left', 'right'].includes(config.videoPosition)) {
-      errors.push('Video position must be center, left, or right');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
+  public validateVideoConfig(config: any): { isValid: boolean; errors: string[] } {
+    // Videos have been removed from the project
+    return { isValid: true, errors: [] };
   }
 
   /**
@@ -165,35 +110,11 @@ export class CafeVideoService {
   }
 
   /**
-   * Get video source for a cafe
+   * Get video source for a cafe - videos removed
    */
-  public getVideoSource(cafe: Cafe): any {
-    const config = this.getVideoConfig(cafe);
-
-    if (config.videoUrl) {
-      // Server video URL
-      return { uri: config.videoUrl };
-    }
-
-    if (config.localVideoPath) {
-      // Local video path for demo cafes - use static mapping
-      const videoMap: Record<string, any> = {
-        'coffee_video.mp4': require('../assets/coffee_video.mp4'),
-        'coffee_house_video.mp4': require('../assets/coffee_house_video.mp4'),
-        'brew_bean_video.mp4': require('../assets/brew_bean_video.mp4'),
-      };
-
-      const videoSource = videoMap[config.localVideoPath];
-      if (videoSource) {
-        return videoSource;
-      } else {
-        console.warn(`Video not found: ${config.localVideoPath}, using default`);
-        return require('../assets/coffee_video.mp4');
-      }
-    }
-
-    // Fallback to default video
-    return require('../assets/coffee_video.mp4');
+  public getVideoSource(cafe: Cafe): null {
+    // Videos have been removed from the project
+    return null;
   }
 }
 

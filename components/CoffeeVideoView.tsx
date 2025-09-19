@@ -1,23 +1,12 @@
-import { ResizeMode, Video } from 'expo-av';
+// Videos removed - no imports needed
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function CoffeeVideoView() {
-  const video = useRef<Video>(null);
-
-  useEffect(() => {
-    // Small delay before starting video
-    const timer = setTimeout(() => {
-      if (video.current) {
-        video.current.playAsync();
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  // Videos removed - no refs or effects needed
 
   return (
     <View style={styles.container}>
@@ -29,31 +18,7 @@ export default function CoffeeVideoView() {
         style={styles.backgroundGradient}
       />
       
-      {/* Video over background */}
-      <Video
-        ref={video}
-        style={styles.video}
-        source={require('../assets/coffee_video.mp4')}
-        resizeMode={ResizeMode.COVER}
-        shouldPlay={false} // Don't start automatically at first
-        isLooping={true}
-        isMuted={true}
-        useNativeControls={false}
-        onLoad={() => {
-          console.log('Video loaded successfully!');
-          // Start video after loading
-          video.current?.playAsync();
-        }}
-        onError={(error) => {
-          console.log('Video loading error:', error);
-        }}
-        onPlaybackStatusUpdate={(status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            // Restart video when finished
-            video.current?.replayAsync();
-          }
-        }}
-      />
+      {/* Videos have been removed from the project */}
     </View>
   );
 }

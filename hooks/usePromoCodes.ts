@@ -1,73 +1,93 @@
 import { useEffect, useState } from 'react';
+import { PromoCodeImage } from '../data/demoPromoCodes';
 import PromoCodeService from '../services/PromoCodeService';
-import { PromoCode } from '../types/PromoCode';
 
 export const usePromoCodes = (cafeId: string) => {
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [promoCodeImages, setPromoCodeImages] = useState<PromoCodeImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPromoCodes = async () => {
+    const fetchPromoCodeImages = async () => {
       try {
         setLoading(true);
         setError(null);
         
         const promoCodesService = PromoCodeService.getInstance();
-        const codes = await promoCodesService.getPromoCodesForCafe(cafeId);
+        const images = await promoCodesService.getPromoCodeImages(cafeId);
         
-        setPromoCodes(codes);
+        setPromoCodeImages(images);
       } catch (err) {
-        console.error('Error fetching promo codes:', err);
-        setError('Не удалось загрузить промокоды');
-        setPromoCodes([]);
+        console.error('Error fetching promo code images:', err);
+        setError('Не удалось загрузить изображения промокодов');
+        setPromoCodeImages([]);
       } finally {
         setLoading(false);
       }
     };
 
     if (cafeId) {
-      fetchPromoCodes();
+      fetchPromoCodeImages();
     }
   }, [cafeId]);
 
-  const applyPromoCode = async (promoId: string, orderAmount: number) => {
+  const addPromoCodeImage = async (imageUrl: string): Promise<PromoCodeImage | null> => {
     try {
       const promoCodesService = PromoCodeService.getInstance();
-      const result = await promoCodesService.applyPromoCode(cafeId, promoId, orderAmount);
-      return result;
+      const newImage = await promoCodesService.addPromoCodeImage(cafeId, imageUrl);
+      
+      // Обновляем локальное состояние
+      setPromoCodeImages(prev => [...prev, newImage]);
+      
+      return newImage;
     } catch (err) {
-      console.error('Error applying promo code:', err);
-      return {
-        success: false,
-        discount: 0,
-        message: 'Ошибка при применении промокода'
-      };
+      console.error('Error adding promo code image:', err);
+      setError('Не удалось добавить изображение промокода');
+      return null;
     }
   };
 
-  const refreshPromoCodes = async () => {
+  const removePromoCodeImage = async (imageId: string): Promise<boolean> => {
+    try {
+      const promoCodesService = PromoCodeService.getInstance();
+      const success = await promoCodesService.removePromoCodeImage(cafeId, imageId);
+      
+      if (success) {
+        // Обновляем локальное состояние
+        setPromoCodeImages(prev => prev.filter(image => image.id !== imageId));
+      }
+      
+      return success;
+    } catch (err) {
+      console.error('Error removing promo code image:', err);
+      setError('Не удалось удалить изображение промокода');
+      return false;
+    }
+  };
+
+  const refreshPromoCodeImages = async () => {
     try {
       setLoading(true);
       setError(null);
       
       const promoCodesService = PromoCodeService.getInstance();
-      const codes = await promoCodesService.getPromoCodesForCafe(cafeId);
+      const images = await promoCodesService.getPromoCodeImages(cafeId);
       
-      setPromoCodes(codes);
+      setPromoCodeImages(images);
     } catch (err) {
-      console.error('Error refreshing promo codes:', err);
-      setError('Не удалось обновить промокоды');
+      console.error('Error refreshing promo code images:', err);
+      setError('Не удалось обновить изображения промокодов');
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    promoCodes,
+    promoCodeImages,
     loading,
     error,
-    applyPromoCode,
-    refreshPromoCodes,
+    addPromoCodeImage,
+    removePromoCodeImage,
+    refreshPromoCodeImages,
   };
 };
