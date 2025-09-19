@@ -1,4 +1,4 @@
-import { ResizeMode, Video } from 'expo-av';
+// Videos removed - no imports needed
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
@@ -32,16 +32,7 @@ export default function VideoPlayer() {
         </View>
       </LinearGradient>
 
-              {/* Try simple video without complex logic */}
-      <Video
-        style={styles.video}
-        source={require('../assets/videos/coffee_video.mp4')}
-        resizeMode={ResizeMode.COVER}
-        shouldPlay={true}
-        isLooping={true}
-        isMuted={true}
-        useNativeControls={false}
-      />
+              {/* Videos have been removed from the project */}
     </View>
   );
 }

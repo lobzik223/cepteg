@@ -1,5 +1,10 @@
-import { getPromoCodeById, getPromoCodesByCafe, isPromoCodeValid } from '../data/demoPromoCodes';
-import { PromoCode } from '../types/PromoCode';
+import {
+    addPromoCodeImage,
+    getPromoCodeImageById,
+    getPromoCodeImagesByCafe,
+    PromoCodeImage,
+    removePromoCodeImage
+} from '../data/demoPromoCodes';
 
 class PromoCodeService {
   private static instance: PromoCodeService;
@@ -13,114 +18,71 @@ class PromoCodeService {
     return PromoCodeService.instance;
   }
 
-  // Получить все активные промокоды для кафе
-  public async getPromoCodesForCafe(cafeId: string): Promise<PromoCode[]> {
+  /**
+   * Get all active promo code images for a specific cafe
+   */
+  public async getPromoCodeImages(cafeId: string): Promise<PromoCodeImage[]> {
     try {
-      // В будущем здесь будет API запрос
-      // const response = await fetch(`${apiEndpoint}/promo-codes?cafeId=${cafeId}`);
-      // return response.json();
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Пока используем демо данные
-      const promoCodes = getPromoCodesByCafe(cafeId);
-      return promoCodes.filter(promo => isPromoCodeValid(promo));
+      return getPromoCodeImagesByCafe(cafeId);
     } catch (error) {
-      console.error('Error fetching promo codes:', error);
+      console.error('Error fetching promo code images:', error);
       return [];
     }
   }
 
-  // Получить промокод по ID
-  public async getPromoCodeById(cafeId: string, promoId: string): Promise<PromoCode | null> {
+  /**
+   * Get a specific promo code image by ID
+   */
+  public async getPromoCodeImageById(cafeId: string, imageId: string): Promise<PromoCodeImage | null> {
     try {
-      // В будущем здесь будет API запрос
-      // const response = await fetch(`${apiEndpoint}/promo-codes/${promoId}`);
-      // return response.json();
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Пока используем демо данные
-      return getPromoCodeById(cafeId, promoId);
+      return getPromoCodeImageById(cafeId, imageId);
     } catch (error) {
-      console.error('Error fetching promo code:', error);
+      console.error('Error fetching promo code image:', error);
       return null;
     }
   }
 
-  // Применить промокод
-  public async applyPromoCode(cafeId: string, promoId: string, orderAmount: number): Promise<{
-    success: boolean;
-    discount: number;
-    message: string;
-  }> {
+  /**
+   * Add a new promo code image
+   */
+  public async addPromoCodeImage(cafeId: string, imageUrl: string): Promise<PromoCodeImage> {
     try {
-      const promoCode = await this.getPromoCodeById(cafeId, promoId);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      if (!promoCode) {
-        return {
-          success: false,
-          discount: 0,
-          message: 'Промокод не найден'
-        };
-      }
-
-      if (!isPromoCodeValid(promoCode)) {
-        return {
-          success: false,
-          discount: 0,
-          message: 'Промокод недействителен'
-        };
-      }
-
-      if (promoCode.minOrderAmount && orderAmount < promoCode.minOrderAmount) {
-        return {
-          success: false,
-          discount: 0,
-          message: `Минимальная сумма заказа: ₺${promoCode.minOrderAmount / 100}`
-        };
-      }
-
-      if (promoCode.usageLimit && promoCode.usedCount >= promoCode.usageLimit) {
-        return {
-          success: false,
-          discount: 0,
-          message: 'Промокод исчерпан'
-        };
-      }
-
-      let discount = 0;
-      switch (promoCode.discountType) {
-        case 'percentage':
-          discount = Math.round((orderAmount * promoCode.discountValue) / 100);
-          break;
-        case 'fixed':
-          discount = promoCode.discountValue;
-          break;
-        case 'free_drink':
-          // Для бесплатного напитка нужно определить стоимость самого дешевого напитка
-          discount = Math.min(orderAmount, 5000); // Максимум 50 TL
-          break;
-      }
-
-      // В будущем здесь будет API запрос для обновления счетчика использования
-      // await fetch(`${apiEndpoint}/promo-codes/${promoId}/use`, { method: 'POST' });
-
-      return {
-        success: true,
-        discount,
-        message: 'Промокод применен успешно'
-      };
+      return addPromoCodeImage(cafeId, imageUrl);
     } catch (error) {
-      console.error('Error applying promo code:', error);
-      return {
-        success: false,
-        discount: 0,
-        message: 'Ошибка при применении промокода'
-      };
+      console.error('Error adding promo code image:', error);
+      throw error;
     }
   }
 
-  // Проверить валидность промокода
-  public async validatePromoCode(cafeId: string, promoId: string): Promise<boolean> {
-    const promoCode = await this.getPromoCodeById(cafeId, promoId);
-    return promoCode ? isPromoCodeValid(promoCode) : false;
+  /**
+   * Remove a promo code image
+   */
+  public async removePromoCodeImage(cafeId: string, imageId: string): Promise<boolean> {
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      return removePromoCodeImage(cafeId, imageId);
+    } catch (error) {
+      console.error('Error removing promo code image:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all active promo code images for a specific cafe (backward compatibility)
+   */
+  public async getPromoCodesForCafe(cafeId: string): Promise<PromoCodeImage[]> {
+    return this.getPromoCodeImages(cafeId);
   }
 }
 

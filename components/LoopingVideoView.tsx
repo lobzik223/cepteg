@@ -1,6 +1,6 @@
-import { ResizeMode, Video } from 'expo-av';
+// Videos removed - no imports needed
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -10,8 +10,7 @@ const isTablet = width >= 768;
 const isLandscape = width > height;
 
 export default function LoopingVideoView() {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
+  // Videos removed - no state needed
 
   return (
     <View style={styles.container}>
@@ -23,26 +22,7 @@ export default function LoopingVideoView() {
         style={styles.fallbackBackground}
       />
       
-      {/* Video - only show if loaded successfully */}
-      {!videoError && (
-        <Video
-          style={[styles.video, { opacity: videoLoaded ? 1 : 0 }]}
-          source={require('../assets/coffee_video.mp4')}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          isMuted
-          useNativeControls={false}
-          onError={(error) => {
-            console.log('Video error:', error);
-            setVideoError(true);
-          }}
-          onLoad={() => {
-            console.log('Video loaded successfully');
-            setVideoLoaded(true);
-          }}
-        />
-      )}
+      {/* Videos have been removed from the project */}
     </View>
   );
 }

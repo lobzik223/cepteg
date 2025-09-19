@@ -11,11 +11,6 @@ export const demoCafes: Cafe[] = [
     apiEndpoint: 'http://localhost:3001/api',
     isActive: true,
     categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
-    videoConfig: {
-      localVideoPath: 'coffee_house_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'left',
-    },
   },
   {
     id: 'demo_cafe_005',
@@ -26,11 +21,6 @@ export const demoCafes: Cafe[] = [
     apiEndpoint: 'http://localhost:3001/api',
     isActive: true,
     categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
-    videoConfig: {
-      localVideoPath: 'coffee_house_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'left',
-    },
   },
   {
     id: 'demo_cafe_006',
@@ -41,11 +31,6 @@ export const demoCafes: Cafe[] = [
     apiEndpoint: 'http://localhost:3001/api',
     isActive: true,
     categories: ['for-you', 'new', 'hot-drinks', 'iced-drinks'],
-    videoConfig: {
-      localVideoPath: 'coffee_house_video.mp4',
-      fallbackColors: ['#FEF3C7', '#FDE68A', '#F59E0B'],
-      videoPosition: 'left',
-    },
   },
   {
     id: 'demo_cafe_003',
@@ -56,11 +41,6 @@ export const demoCafes: Cafe[] = [
     apiEndpoint: 'http://localhost:3002/api',
     isActive: true,
     categories: ['for-you', 'new', 'hot-drinks', 'desserts'],
-    videoConfig: {
-      localVideoPath: 'brew_bean_video.mp4', // Brew & Bean specific video
-      fallbackColors: ['#ECFDF5', '#D1FAE5', '#10B981'], // Green brew colors
-      videoPosition: 'right',
-    },
   },
 ];
 

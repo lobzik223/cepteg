@@ -145,11 +145,6 @@ export class CafeStorageService {
       apiEndpoint: tenant.apiEndpoint,
       isActive: true,
       categories: ['for-you', 'new'], // Default categories
-      videoConfig: {
-        localVideoPath: 'coffee_video.mp4',
-        fallbackColors: ['#E8F4FD', '#D1E7DD', '#C3E9C0'],
-        videoPosition: 'center',
-      },
     };
   }
 }

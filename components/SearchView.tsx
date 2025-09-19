@@ -12,7 +12,6 @@ import {
     View
 } from 'react-native';
 import { Cafe } from '../services/CafeService';
-import VideoBackground from './VideoBackground';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -62,7 +61,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       <View style={styles.cafeInfo}>
         <View style={styles.cafeHeader}>
           <View style={styles.cafeIconContainer}>
-            <Ionicons name="cafe" size={isTablet ? 28 : 22} color="#8B5CF6" />
+            <Ionicons name="cafe" size={isTablet ? 28 : 22} color="#359441" />
           </View>
           <View style={styles.cafeDetails}>
             <Text style={styles.cafeName}>{item.name}</Text>
@@ -87,7 +86,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIconContainer, styles.activeIconContainer]}>
-              <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={14} color="#359441" />
             </View>
             <Text style={[styles.statText, styles.activeText]}>Active</Text>
           </View>
@@ -97,7 +96,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {selectedCafe?.id === item.id && (
         <View style={styles.selectedIndicator}>
           <View style={styles.selectedIconContainer}>
-            <Ionicons name="checkmark-circle" size={20} color="#8B5CF6" />
+            <Ionicons name="checkmark-circle" size={20} color="#359441" />
           </View>
         </View>
       )}
@@ -110,22 +109,24 @@ export const SearchView: React.FC<SearchViewProps> = ({
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="arrow-back" size={isTablet ? 32 : 24} color="#000" />
-        </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Choose Location</Text>
-          <Text style={styles.headerSubtitle}>{networkName} Network</Text>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={isTablet ? 32 : 28} color="#376138" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitle}>
+            <Text style={styles.headerTitleText}>Choose Location</Text>
+            <Text style={styles.headerSubtitle}>{networkName}</Text>
+          </View>
+          
+          <TouchableOpacity style={styles.qrButton}>
+            <Ionicons name="qr-code" size={isTablet ? 32 : 28} color="#376138" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.placeholderButton} />
       </View>
 
       {/* Network Info */}
-      <VideoBackground
-        videoSource={require('../assets/videoforlocation.mp4')}
-        style={styles.networkInfo}
-        fallbackColors={['#F8FAFC', '#E5E7EB']}
-      >
+      <View style={styles.networkInfo}>
         <View style={styles.networkIcon}>
           <Ionicons name="business" size={isTablet ? 40 : 32} color="#FFFFFF" />
         </View>
@@ -135,7 +136,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             {filteredCafes.length} of {cafes.length} location{cafes.length !== 1 ? 's' : ''} available
           </Text>
         </View>
-      </VideoBackground>
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -206,49 +207,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
     backgroundColor: '#fff',
+    paddingTop: isTablet ? 20 : 16,
+    paddingBottom: isTablet ? 20 : 16,
+    paddingHorizontal: isTablet ? 24 : 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  closeButton: {
-    width: isTablet ? 44 : 40,
-    height: isTablet ? 44 : 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
     flex: 1,
     alignItems: 'center',
   },
-  headerTitle: {
-    color: '#000',
-    fontSize: isTablet ? 18 : 16,
+  headerTitleText: {
+    fontSize: isTablet ? 20 : 18,
     fontWeight: '600',
+    color: '#376138',
+    marginBottom: 2,
   },
   headerSubtitle: {
-    color: '#6B7280',
     fontSize: isTablet ? 14 : 12,
-    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  placeholderButton: {
-    width: isTablet ? 44 : 40,
-    height: isTablet ? 44 : 40,
+  backButton: {
+    width: isTablet ? 48 : 44,
+    height: isTablet ? 48 : 44,
+    borderRadius: isTablet ? 24 : 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 0,
+  },
+  qrButton: {
+    width: isTablet ? 48 : 44,
+    height: isTablet ? 48 : 44,
+    borderRadius: isTablet ? 24 : 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 0,
   },
   networkInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingVertical: 24,
+    backgroundColor: '#359441',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     minHeight: 100,
+    shadowColor: '#359441',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -283,12 +301,12 @@ const styles = StyleSheet.create({
     width: isTablet ? 60 : 50,
     height: isTablet ? 60 : 50,
     borderRadius: isTablet ? 30 : 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   networkDetails: {
     flex: 1,
@@ -317,7 +335,7 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: isTablet ? 18 : 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#376138',
     marginTop: 20,
     marginBottom: 15,
   },
@@ -326,24 +344,24 @@ const styles = StyleSheet.create({
   },
   cafeItem: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  selectedCafeItem: {
-    borderColor: '#8B5CF6',
-    backgroundColor: '#F8FAFC',
-    shadowColor: '#8B5CF6',
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 6,
+  },
+  selectedCafeItem: {
+    borderColor: '#359441',
+    backgroundColor: '#F0FDF4',
+    shadowColor: '#359441',
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   cafeInfo: {
     flex: 1,
@@ -357,7 +375,7 @@ const styles = StyleSheet.create({
     width: isTablet ? 48 : 40,
     height: isTablet ? 48 : 40,
     borderRadius: isTablet ? 24 : 20,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -373,7 +391,7 @@ const styles = StyleSheet.create({
   cafeName: {
     fontSize: isTablet ? 18 : 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#376138',
     marginBottom: 4,
   },
   cafeLocation: {
@@ -384,7 +402,7 @@ const styles = StyleSheet.create({
   },
   cafeDescription: {
     fontSize: isTablet ? 13 : 11,
-    color: '#9CA3AF',
+    color: '#376138',
     lineHeight: 16,
   },
   cafeStats: {
@@ -411,11 +429,11 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: isTablet ? 12 : 10,
-    color: '#6B7280',
+    color: '#376138',
     fontWeight: '500',
   },
   activeText: {
-    color: '#10B981',
+    color: '#376138',
   },
   selectedIndicator: {
     position: 'absolute',
@@ -439,14 +457,14 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: isTablet ? 18 : 16,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#376138',
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyStateText: {
     fontSize: isTablet ? 14 : 12,
-    color: '#9CA3AF',
+    color: '#376138',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -462,14 +480,14 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   continueButton: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#359441',
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8B5CF6',
+    shadowColor: '#359441',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
