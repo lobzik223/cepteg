@@ -119,9 +119,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             <Text style={styles.headerSubtitle}>{networkName}</Text>
           </View>
           
-          <TouchableOpacity style={styles.qrButton}>
-            <Ionicons name="qr-code" size={isTablet ? 32 : 28} color="#376138" />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
       </View>
 
@@ -242,13 +240,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 0,
   },
-  qrButton: {
+  headerSpacer: {
     width: isTablet ? 48 : 44,
     height: isTablet ? 48 : 44,
-    borderRadius: isTablet ? 24 : 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 0,
   },
   networkInfo: {
     flexDirection: 'row',

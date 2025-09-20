@@ -3,10 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
 } from 'react-native-reanimated';
 import { Cafe } from '../services/CafeService';
 import { dataPreloadService, PreloadProgress } from '../services/DataPreloadService';

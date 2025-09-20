@@ -1,17 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useProducts } from '../hooks/useProducts';
@@ -646,6 +646,8 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         cafeId={cafe?.id}
+        cafeName={cafe?.name}
+        cafeLocation={cafe?.location}
       />
 
 
@@ -687,15 +689,15 @@ export default function HomeView({ onProfilePress, cafe, onBackToScanner, preloa
         <TouchableOpacity style={styles.floatingCartButton} onPress={openCartModal}>
           <View style={[
             styles.floatingCartGradient,
-            { backgroundColor: cartItems.length > 0 ? '#359441' : '#9E9E9E' }
+            { backgroundColor: cartItems.length > 0 ? '#4CAF50' : '#757575' }
           ]}>
-            <Ionicons name="cart" size={isTablet ? 24 : 20} color="#fff" />
+            <Ionicons name="bag" size={isTablet ? 28 : 20} color="#fff" />
           </View>
           {/* Счетчик товаров */}
           {cartItems.length > 0 && (
             <View style={styles.cartCounter}>
               <Text style={styles.cartCounterText}>
-                {cartItems.length}
+                {cartItems.reduce((total, item) => total + item.quantity, 0)}
               </Text>
             </View>
           )}
@@ -1132,60 +1134,64 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   floatingCartButton: {
-    width: isTablet ? 60 : 50,
-    height: isTablet ? 60 : 50,
-    borderRadius: isTablet ? 30 : 25,
+    width: isTablet ? 70 : 50,
+    height: isTablet ? 70 : 50,
+    borderRadius: isTablet ? 35 : 25,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    overflow: 'visible',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 10,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 12,
   },
   floatingCartGradient: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: isTablet ? 30 : 25,
+    borderRadius: isTablet ? 35 : 25,
     position: 'relative',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   cartCounter: {
     position: 'absolute',
-    top: -12,
-    right: -12,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 15,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    minWidth: 18,
-    minHeight: 18,
+    top: isTablet ? -12 : -10,
+    right: isTablet ? -12 : -10,
+    backgroundColor: '#FF5722',
+    borderRadius: isTablet ? 18 : 15,
+    paddingHorizontal: isTablet ? 8 : 6,
+    paddingVertical: isTablet ? 4 : 3,
+    minWidth: isTablet ? 36 : 30,
+    minHeight: isTablet ? 36 : 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: isTablet ? 4 : 3,
     borderColor: '#FFFFFF',
-    shadowColor: '#FF6B6B',
+    shadowColor: '#FF5722',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 6,
     },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 15,
   },
   cartCounterText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: isTablet ? 14 : 12,
     fontWeight: '900',
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+    includeFontPadding: false,
+    lineHeight: isTablet ? 16 : 14,
   },
 
   // Cart Modal Styles
