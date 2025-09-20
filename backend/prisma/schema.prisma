@@ -1,15 +1,291 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                  BigInt               @id @default(autoincrement())
+  name                String
+  slug                String               @unique
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  branches            Branch[]
+  users               User[]
+  media               MediaFile[]
+  sliders             Slider[]
+  sliderItems         SliderItem[]
+  categories          Category[]
+  products            Product[]
+  productImages       ProductImage[]
+  productOptions      ProductOption[]
+  productOptionValues ProductOptionValue[]
+  campaigns           Campaign[]
+  qrMenus             QrMenu[]
+  qrMenuSections      QrMenuSection[]
+  qrMenuItems         QrMenuItem[]
+  auditLogs           AuditLog[]
+}
+
+model Branch {
+  id         BigInt     @id @default(autoincrement())
+  tenantId   BigInt
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  address    String?
+  phone      String?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  users      User[]
+  sliders    Slider[]
+  categories Category[]
+  products   Product[]
+  campaigns  Campaign[]
+  qrMenus    QrMenu[]
+}
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  code  String     @unique // SUPER_ADMIN, OWNER, MANAGER, STAFF
+  name  String
+  users UserRole[]
+}
+
+model UserRole {
+  userId BigInt
+  roleId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model MediaFile {
+  id        BigInt   @id @default(autoincrement())
+  tenantId  BigInt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url       String
+  mime      String?
+  width     Int?
+  height    Int?
+  sizeBytes BigInt?
+  createdAt DateTime @default(now())
+
+  // back-relations:
+  sliderItems   SliderItem[]
+  productImages ProductImage[]
+}
+
+model Slider {
+  id        BigInt       @id @default(autoincrement())
+  tenantId  BigInt
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  BigInt?
+  branch    Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  items     SliderItem[]
+}
+
+model SliderItem {
+  id         BigInt     @id @default(autoincrement())
+  tenantId   BigInt
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sliderId   BigInt
+  slider     Slider     @relation(fields: [sliderId], references: [id], onDelete: Cascade)
+  title      String?
+  subtitle   String?
+  buttonText String?
+  buttonLink String?
+  mediaId    BigInt?
+  media      MediaFile? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  sortOrder  Int        @default(0)
+  isActive   Boolean    @default(true)
+}
+
+model Category {
+  id        BigInt     @id @default(autoincrement())
+  tenantId  BigInt
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  BigInt?
+  branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  parentId  BigInt?
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryToCategory")
+  name      String
+  slug      String
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  products  Product[]
+
+  // back-relation:
+  qrMenuSections QrMenuSection[] @relation("CategoryToQrMenuSection")
+
+  @@unique([tenantId, branchId, slug])
+}
+
+model QrMenuSection {
+  id         BigInt    @id @default(autoincrement())
+  tenantId   BigInt
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  qrMenuId   BigInt
+  qrMenu     QrMenu    @relation(fields: [qrMenuId], references: [id], onDelete: Cascade)
+  title      String
+  categoryId BigInt?
+  category   Category? @relation("CategoryToQrMenuSection", fields: [categoryId], references: [id], onDelete: SetNull)
+  sortOrder  Int       @default(0)
+}
+
+model Product {
+  id              BigInt            @id @default(autoincrement())
+  tenantId        BigInt
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId        BigInt?
+  branch          Branch?           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  categoryId      BigInt?
+  category        Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name            String
+  slug            String
+  description     String?
+  sku             String?
+  priceCents      Int               @default(0)
+  currency        String            @default("TRY")
+  isActive        Boolean           @default(true)
+  isAvailable     Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  images          ProductImage[]
+  options         ProductOption[]
+  CampaignProduct CampaignProduct[]
+  QrMenuItem      QrMenuItem[]
+
+  @@unique([tenantId, branchId, slug])
+}
+
+model ProductImage {
+  id        BigInt     @id @default(autoincrement())
+  tenantId  BigInt
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId BigInt
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   BigInt?
+  media     MediaFile? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  sortOrder Int        @default(0)
+}
+
+model ProductOption {
+  id         BigInt               @id @default(autoincrement())
+  tenantId   BigInt
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId  BigInt
+  product    Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String
+  type       String               @default("single") // single|multiple
+  isRequired Boolean              @default(false)
+  sortOrder  Int                  @default(0)
+  values     ProductOptionValue[]
+}
+
+model ProductOptionValue {
+  id              BigInt        @id @default(autoincrement())
+  tenantId        BigInt
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  optionId        BigInt
+  option          ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  label           String
+  priceDeltaCents Int           @default(0)
+  sortOrder       Int           @default(0)
+  isActive        Boolean       @default(true)
+}
+
+model Campaign {
+  id            BigInt    @id @default(autoincrement())
+  tenantId      BigInt
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId      BigInt?
+  branch        Branch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  startAt       DateTime?
+  endAt         DateTime?
+  discountType  String
+  discountValue Int
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  products CampaignProduct[]
+}
+
+model CampaignProduct {
+  campaignId BigInt
+  productId  BigInt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
+}
+
+model QrMenu {
+  id        BigInt          @id @default(autoincrement())
+  tenantId  BigInt
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  BigInt?
+  branch    Branch?         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  code      String          @unique
+  name      String
+  theme     Json?
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  sections  QrMenuSection[]
+  items     QrMenuItem[]
+}
+
+model QrMenuItem {
+  id               BigInt   @id @default(autoincrement())
+  tenantId         BigInt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  qrMenuId         BigInt
+  qrMenu           QrMenu   @relation(fields: [qrMenuId], references: [id], onDelete: Cascade)
+  productId        BigInt?
+  product          Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  customTitle      String?
+  customPriceCents Int?
+  sortOrder        Int      @default(0)
+  isActive         Boolean  @default(true)
+}
+
+model User {
+  id           BigInt   @id @default(autoincrement())
+  tenantId     BigInt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     BigInt?
+  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  email        String
+  phone        String?
+  passwordHash String
+  fullName     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  roles     UserRole[]
+  auditLogs AuditLog[] // ✅ eklendi
+
+  @@unique([tenantId, email])
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  tenantId  BigInt?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    BigInt?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entity    String
+  entityId  BigInt?
+  action    String // CREATE | UPDATE | DELETE | LOGIN
+  diff      Json?
+  createdAt DateTime @default(now())
 }

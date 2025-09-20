@@ -4,13 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/main.js",
+    "start:dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/main.ts",
+    "start:db": "docker run --name cepeg_db -e POSTGRES_PASSWORD=devpass -e POSTGRES_DB=cepeg -p 5432:5432 -d postgres:16",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "db:setup": "npm run prisma:generate && npm run prisma:migrate && prisma db seed",
+    "db:reset": "prisma migrate reset --force --skip-generate --skip-seed && npm run db:setup"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
@@ -30,6 +40,7 @@
     "cors": "^2.8.5",
     "helmet": "^8.1.0",
     "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1"
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2"
   }
 }
