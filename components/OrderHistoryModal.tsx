@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Animated,
     Dimensions,
     FlatList,
@@ -11,7 +13,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { User } from '../services/AuthService';
+import { Order, orderService } from '../services/OrderService';
 import { formatPrice } from '../utils/priceFormatter';
 
 const { width, height } = Dimensions.get('window');
@@ -40,50 +44,60 @@ interface OrderHistoryModalProps {
 }
 
 export default function OrderHistoryModal({ visible, onClose, user }: OrderHistoryModalProps) {
-  const [orders] = useState<OrderHistoryItem[]>([
-    {
-      id: 'order_001',
-      orderNumber: '#12345',
-      date: '18.09.2024',
-      time: '14:30',
-      cafeName: 'Coffee House - Nevsky',
-      cafeLocation: 'St. Petersburg, Nevsky Prospect 50',
-      items: [
-        { name: 'Americano', quantity: 2, price: 1500 },
-        { name: 'Cappuccino', quantity: 1, price: 1800 },
-        { name: 'Croissant', quantity: 1, price: 800 },
-      ],
-      total: 5100,
-      status: 'completed',
-    },
-    {
-      id: 'order_002',
-      orderNumber: '#12344',
-      date: '17.09.2024',
-      time: '10:15',
-      cafeName: 'Brew & Bean',
-      cafeLocation: 'Kazan, Bauman St. 15',
-      items: [
-        { name: 'Latte', quantity: 1, price: 2000 },
-        { name: 'Muffin', quantity: 2, price: 1200 },
-      ],
-      total: 4400,
-      status: 'completed',
-    },
-    {
-      id: 'order_003',
-      orderNumber: '#12343',
-      date: '16.09.2024',
-      time: '16:45',
-      cafeName: 'Coffee House - Moscow',
-      cafeLocation: 'Moscow, Red Square 1',
-      items: [
-        { name: 'Espresso', quantity: 3, price: 1200 },
-      ],
-      total: 3600,
-      status: 'cancelled',
-    },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Загружаем заказы пользователя при открытии модального окна
+  useEffect(() => {
+    if (visible && user) {
+      loadUserOrders();
+    }
+  }, [visible, user]);
+
+  const loadUserOrders = async () => {
+    try {
+      setLoading(true);
+      const userOrders = await orderService.getUserOrders(user.id);
+      setOrders(userOrders);
+      console.log('Loaded user orders:', userOrders);
+    } catch (error) {
+      console.error('Error loading user orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteOrder = (orderId: string, orderNumber: string) => {
+    Alert.alert(
+      'Delete Order',
+      `Are you sure you want to delete order ${orderNumber}? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await orderService.deleteOrder(orderId);
+              if (success) {
+                // Обновляем список заказов
+                setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+                console.log('Order deleted successfully');
+              } else {
+                Alert.alert('Error', 'Failed to delete order. Please try again.');
+              }
+            } catch (error) {
+              console.error('Error deleting order:', error);
+              Alert.alert('Error', 'Failed to delete order. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Animation values
   const slideAnim = useRef(new Animated.Value(height)).current;
@@ -124,8 +138,90 @@ export default function OrderHistoryModal({ visible, onClose, user }: OrderHisto
     }
   };
 
-  const renderOrderItem = ({ item }: { item: OrderHistoryItem }) => (
-    <View style={styles.orderCard}>
+  const SwipeableOrderItem = ({ item }: { item: Order }) => {
+    const translateX = useRef(new Animated.Value(0)).current;
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const panGesture = Gesture.Pan()
+      .onUpdate((event) => {
+        translateX.setValue(Math.min(0, event.translationX));
+      })
+      .onEnd((event) => {
+        const { translationX } = event;
+        
+        if (translationX < -100) {
+          // Свайп влево больше 100px - показываем кнопку удаления
+          Animated.timing(translateX, {
+            toValue: -80,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        } else {
+          // Возвращаем в исходное положение
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+      });
+
+    const resetPosition = () => {
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handleDelete = () => {
+      setIsDeleting(true);
+      // Анимация удаления
+      Animated.timing(translateX, {
+        toValue: -width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        handleDeleteOrder(item.id, item.orderNumber);
+        setIsDeleting(false);
+        resetPosition();
+      });
+    };
+
+    return (
+      <View style={styles.swipeContainer}>
+        {/* Кнопка удаления (фон) */}
+        <View style={styles.deleteBackground}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            disabled={isDeleting}
+          >
+            <Ionicons name="trash-outline" size={24} color="#fff" />
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Основной контент заказа */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View
+            style={[
+              styles.orderCard,
+              {
+                transform: [{ translateX }],
+              },
+              isDeleting && { opacity: 0.7 },
+            ]}
+          >
+            {renderOrderContent(item)}
+          </Animated.View>
+        </GestureDetector>
+      </View>
+    );
+  };
+
+  const renderOrderContent = (item: Order) => (
+    <>
       <View style={styles.orderHeader}>
         <View style={styles.orderInfo}>
           <Text style={styles.orderNumber}>{item.orderNumber}</Text>
@@ -145,8 +241,8 @@ export default function OrderHistoryModal({ visible, onClose, user }: OrderHisto
       </View>
 
       <View style={styles.orderItems}>
-        {item.items.map((orderItem, index) => (
-          <View key={index} style={styles.orderItemRow}>
+        {item.items.map((orderItem) => (
+          <View key={`${item.id}_${orderItem.id}`} style={styles.orderItemRow}>
             <Text style={styles.itemName}>
               {orderItem.quantity}x {orderItem.name}
             </Text>
@@ -161,7 +257,11 @@ export default function OrderHistoryModal({ visible, onClose, user }: OrderHisto
         <Text style={styles.totalLabel}>Total:</Text>
         <Text style={styles.totalAmount}>{formatPrice(item.total)}</Text>
       </View>
-    </View>
+    </>
+  );
+
+  const renderOrderItem = ({ item }: { item: Order }) => (
+    <SwipeableOrderItem item={item} />
   );
 
   return (
@@ -210,20 +310,27 @@ export default function OrderHistoryModal({ visible, onClose, user }: OrderHisto
             {/* Orders List */}
             <View style={styles.content}>
               <Text style={styles.sectionTitle}>Recent Orders</Text>
-              <FlatList
-                data={orders}
-                renderItem={renderOrderItem}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.ordersList}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <Ionicons name="receipt-outline" size={60} color="#D1D5DB" />
-                    <Text style={styles.emptyStateTitle}>No Orders Yet</Text>
-                    <Text style={styles.emptyStateText}>Your order history will appear here</Text>
-                  </View>
-                }
-              />
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#10B981" />
+                  <Text style={styles.loadingText}>Loading your orders...</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={orders}
+                  renderItem={renderOrderItem}
+                  keyExtractor={(item) => item.id}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.ordersList}
+                  ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                      <Ionicons name="receipt-outline" size={60} color="#D1D5DB" />
+                      <Text style={styles.emptyStateTitle}>No Orders Yet</Text>
+                      <Text style={styles.emptyStateText}>Your order history will appear here after you make your first order</Text>
+                    </View>
+                  }
+                />
+              )}
             </View>
           </LinearGradient>
         </Animated.View>
@@ -331,7 +438,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -443,5 +549,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  // Swipe styles
+  swipeContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  deleteBackground: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 80,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  deleteButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

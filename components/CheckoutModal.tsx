@@ -1,23 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    Image,
-    LayoutAnimation,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    UIManager,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from 'react-native';
+import { authService } from '../services/AuthService';
+import { orderService } from '../services/OrderService';
 import { Product } from '../types/Product';
 import { formatPrice } from '../utils/priceFormatter';
+import AuthModal from './AuthModal';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -36,6 +39,8 @@ interface CheckoutModalProps {
   readonly onUpdateQuantity?: (productId: string, quantity: number) => void;
   readonly onRemoveItem?: (productId: string) => void;
   readonly cafeId?: string;
+  readonly cafeName?: string;
+  readonly cafeLocation?: string;
 }
 
 export default function CheckoutModal({ 
@@ -45,11 +50,14 @@ export default function CheckoutModal({
   onOrderSuccess,
   onUpdateQuantity,
   onRemoveItem,
-  cafeId
+  cafeId,
+  cafeName,
+  cafeLocation
 }: CheckoutModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   // Enable LayoutAnimation for Android
   if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -132,7 +140,30 @@ export default function CheckoutModal({
     return cleaned;
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    try {
+      // Проверяем, авторизован ли пользователь
+      const isLoggedIn = await authService.isUserLoggedIn();
+      
+      if (isLoggedIn) {
+        // Пользователь авторизован - показываем форму оплаты
+        setShowPaymentForm(true);
+      } else {
+        // Пользователь не авторизован - показываем модальное окно авторизации
+        setShowAuthModal(true);
+      }
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+      // В случае ошибки показываем форму авторизации
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleAuthSuccess = (user: any) => {
+    // После успешной авторизации закрываем модальное окно авторизации
+    // и показываем форму оплаты
+    console.log('User authenticated:', user);
+    setShowAuthModal(false);
     setShowPaymentForm(true);
   };
 
@@ -163,6 +194,29 @@ export default function CheckoutModal({
       //   items: cartItems
       // };
       // await fetch('/api/payments', { method: 'POST', body: JSON.stringify(paymentData) });
+
+      // После успешной оплаты сохраняем заказ
+      try {
+        const currentUser = await authService.getCurrentUser();
+        
+        if (currentUser && cafeId && cafeName) {
+          await orderService.saveOrder({
+            userId: currentUser.id,
+            cafeId: cafeId,
+            cafeName: cafeName,
+            cafeLocation: cafeLocation || 'Location not specified',
+            cartItems: cartItems,
+            total: calculateTotal(),
+          });
+          
+          console.log('Order saved successfully');
+        } else {
+          console.warn('Missing user or cafe information, order not saved');
+        }
+      } catch (saveError) {
+        console.error('Error saving order:', saveError);
+        // Не прерываем процесс, даже если сохранение не удалось
+      }
 
       console.log('CheckoutModal: calling onOrderSuccess');
       onOrderSuccess();
@@ -445,14 +499,23 @@ export default function CheckoutModal({
   );
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      {showPaymentForm ? renderPaymentForm() : renderCheckoutContent()}
-    </Modal>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        {showPaymentForm ? renderPaymentForm() : renderCheckoutContent()}
+      </Modal>
+
+      {/* Auth Modal */}
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    </>
   );
 }
 
